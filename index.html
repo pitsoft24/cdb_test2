@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Textvorlagen Editor</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Textvorlagen Editor</h1>
+        <div class="controls">
+            <button id="addRow">Neue Zeile hinzufügen</button>
+            <button id="saveTemplate">Vorlage speichern</button>
+        </div>
+        <table id="templateTable">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Text</th>
+                    <th>Aktionen</th>
+                </tr>
+            </thead>
+            <tbody id="templateBody">
+                <!-- Zeilen werden hier dynamisch eingefügt -->
+            </tbody>
+        </table>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html> 
