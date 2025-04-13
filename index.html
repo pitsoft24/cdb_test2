@@ -103,7 +103,11 @@
         }
         
         tr:hover {
-            background-color: #f5f5f5;
+            background-color: #f5f9ff;
+        }
+        
+        td:hover {
+            background-color: #edf3fe;
         }
 
         .status-message {
@@ -122,6 +126,10 @@
 
         .error {
             background-color: #f44336;
+        }
+
+        .highlight-new-row {
+            background-color: #e3f2fd !important;
         }
     </style>
 </head>
@@ -208,6 +216,9 @@
             const tbody = document.querySelector('#dbTable tbody');
             const tr = document.createElement('tr');
             
+            // Add highlight class to new row
+            tr.classList.add('highlight-new-row');
+            
             fields.forEach(field => {
                 const td = document.createElement('td');
                 const input = document.createElement('input');
@@ -232,7 +243,10 @@
             insertBtn.textContent = 'Neue Zeile';
             insertBtn.className = 'insert-btn';
             insertBtn.onclick = () => {
-                addTableRow(Array(12).fill(''), tr);
+                // Get all input values from current row
+                const currentInputs = Array.from(tr.querySelectorAll('input'));
+                const currentValues = currentInputs.map(input => input.value);
+                addTableRow(currentValues, tr);
             };
             actionsTd.appendChild(insertBtn);
             
