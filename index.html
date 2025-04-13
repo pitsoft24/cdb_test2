@@ -57,6 +57,14 @@
         .delete-btn:hover {
             background-color: #d32f2f;
         }
+
+        .insert-btn {
+            background-color: #2196F3;
+        }
+        
+        .insert-btn:hover {
+            background-color: #1976D2;
+        }
         
         .table-container {
             overflow-x: auto;
@@ -189,7 +197,7 @@
                 });
         }
 
-        function addTableRow(fields = Array(12).fill('')) {
+        function addTableRow(fields = Array(12).fill(''), insertAfter = null) {
             const tbody = document.querySelector('#dbTable tbody');
             const tr = document.createElement('tr');
             
@@ -202,6 +210,17 @@
             });
             
             const actionsTd = document.createElement('td');
+            
+            // Insert button
+            const insertBtn = document.createElement('button');
+            insertBtn.textContent = 'Neue Zeile';
+            insertBtn.className = 'insert-btn';
+            insertBtn.onclick = () => {
+                addTableRow(Array(12).fill(''), tr);
+            };
+            actionsTd.appendChild(insertBtn);
+            
+            // Delete button
             const deleteBtn = document.createElement('button');
             deleteBtn.textContent = 'Löschen';
             deleteBtn.className = 'delete-btn';
@@ -209,10 +228,12 @@
                 tr.remove();
             };
             actionsTd.appendChild(deleteBtn);
+            
             tr.appendChild(actionsTd);
             
-            // Insert at the beginning of the table instead of the end
-            if (tbody.firstChild) {
+            if (insertAfter) {
+                tbody.insertBefore(tr, insertAfter.nextSibling);
+            } else if (tbody.firstChild) {
                 tbody.insertBefore(tr, tbody.firstChild);
             } else {
                 tbody.appendChild(tr);
