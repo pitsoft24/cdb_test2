@@ -166,13 +166,22 @@
                     const tbody = document.querySelector('#dbTable tbody');
                     tbody.innerHTML = '';
                     
-                    lines.forEach(line => {
-                        if (!line.startsWith('#')) {
-                            const fields = line.split(':');
-                            if (fields.length > 1) {
-                                addTableRow(fields);
-                            }
-                        }
+                    // Filter out header lines and create array of data rows
+                    const dataRows = lines
+                        .filter(line => !line.startsWith('#'))
+                        .map(line => line.split(':'))
+                        .filter(fields => fields.length > 1);
+
+                    // Sort data rows by the first field (Name)
+                    dataRows.sort((a, b) => {
+                        const nameA = a[0].toUpperCase();
+                        const nameB = b[0].toUpperCase();
+                        return nameA.localeCompare(nameB);
+                    });
+
+                    // Add sorted rows to table
+                    dataRows.forEach(fields => {
+                        addTableRow(fields);
                     });
                 })
                 .catch(error => {
