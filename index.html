@@ -66,6 +66,14 @@
             background-color: #1976D2;
         }
         
+        .save-btn {
+            background-color: #FF9800;
+        }
+        
+        .save-btn:hover {
+            background-color: #F57C00;
+        }
+        
         .table-container {
             overflow-x: auto;
         }
@@ -123,7 +131,6 @@
         
         <div class="controls">
             <button onclick="addRow()">Neue Zeile</button>
-            <button onclick="saveChanges()">Speichern</button>
         </div>
         
         <div class="table-container">
@@ -210,6 +217,15 @@
             });
             
             const actionsTd = document.createElement('td');
+            
+            // Save button
+            const saveBtn = document.createElement('button');
+            saveBtn.textContent = 'Speichern';
+            saveBtn.className = 'save-btn';
+            saveBtn.onclick = () => {
+                saveChanges();
+            };
+            actionsTd.appendChild(saveBtn);
             
             // Insert button
             const insertBtn = document.createElement('button');
