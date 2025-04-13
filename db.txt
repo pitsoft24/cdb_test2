@@ -1,0 +1,48 @@
+# HDR info
+# Feld 0  name    = 6 chars old name, 9 chars new name
+# Feld 1  ip      = ip address
+# Feld 2  usrname
+# Feld 3  usrpwd
+# Feld 4  enapwd
+# Feld 5  ostype  = IOS/COS/NOS/JUNOS/EW = ( IOS / Cat OS / Native OS / JUNOS / ExtremeWare )
+# Feld 6  access  = TEL/SSH = ( Telnet / ssh ) please set the ssh key first!!
+# Feld 7  clear   = CL/NOCL/OFF = ( Clear / NoClear / Off - No Polling - Maintenance )
+# Feld 8  poll    = Poll interval = every X Minutes ( max 59 Minutes - will be extended )
+# Feld 9  llid    = Location ID
+# Feld 10 info    = Information
+# Feld 11 tid     = Ticket-id
+#
+#   please NEVER change the HDR line ......
+#
+#HDR:name:ip:usrname:usrpwd:enapwd:ostype:access:clear:poll:llid:info:tid
+hhhcor007:253.100.33.7:scr-user:scr-pass:none:JUNOS:SSH:CL:11:::
+alghun010:60.188.0.26:scr-user:scr-pass:none:NOS:SSH:CL:15:::
+anbghn625:60.161.63.248:scr-user:scr-pass:none:NOS:SSH:CL:15:::
+anbghr003:0.161.63.160:scr-user:scr-pass:none:JUNOS:SSH:CL:15:::
+anbgwn002:33.161.63.155:scr-user:scr-pass:none:EW:SSH:CL:15:::
+anbgwn004:33.161.63.140:scr-user:scr-pass:none:NOS:SSH:CL:15:::
+asfbws001:33.24.254.34:scr-user:scr-pass:none:IOS:SSH:CL:15:LL0000151650::
+bblsks017:33.154.254.17:scr-user:scr-pass:none:IOS:SSH:CL:15:::
+bdbnhs002:33.186.14.3:scr-user:scr-pass:none:IOS:SSH:CL:15:::
+bdbrks001:33.167.89.219:scr-user:scr-pass:none:IOS:SSH:CL:15:LL0000149972::
+bghmhr999:153.100.33.126:scr-user:scr-pass:none:JUNOS:SSH:CL:10:::
+bghmnf005_secondary:33.184.140.26:scr-user:scr-pass:none:ASA:SSH:NOCL:15:::
+bghmnn005:33.184.140.30:scr-user:scr-pass:none:NOS:SSH:CL:15:::
+bghmns106:33.134.190.4:scr-user:scr-pass:none:IOS:SSH:CL:15:ZZI0001154::
+bghmps002:33.167.31.131:scr-user:scr-pass:none:IOS:SSH:CL:15:::
+bghmwr001:33.251.1.85:scr-user:scr-pass:none:IOS:SSH:CL:15:::
+brakat001:33.162.154.194:scr-user:scr-pass:none:IOS:SSH:OFF:15:LL0000150055:Standort Abgebrant:
+anbghf312:33.103.95.101:scr-user:scr-pass:none:FGT:SSH:OFF:99:::
+anbghf888:33.157.22.61:scr-user:scr-pass:none:FGT:SSH:OFF:99:::
+bghmnf007:33.165.76.46:scr-user:scr-pass:none:FGT:SSH:OFF:99:::
+btbgdn001:33.186.255.50:scr-user:scr-pass:none:NOS:SSH:CL:15:::
+drmgbs002:33.134.135.3:scr-user:scr-pass:none:IOS:SSH:CL:15:::
+drmghr002:33.251.1.30:scr-user:scr-pass:none:IOS:SSH:CL:15:ZZM0005288:RWE_SDWAN:
+drmghs001:33.255.33.114:scr-user:scr-pass:none:IOS:SSH:CL:15:::
+elsddn001:33.165.77.46:scr-user:scr-pass:none:NOS:SSH:CL:15:::
+lan-d-de-eoll-hage-001:33.23.253.110:scr-user:scr-pass:none:IOS:SSH:CL:12:::
+lan-d-de-eeun-baer-002:33.96.42.37:scr-user:scr-pass:none:NOS:SSH:CL:12:::
+lan-s-de-euau-esch-001:33.193.9.215:scr-user:scr-pass:none:JUNOS:SSH:CL:12:::
+lan-s-de-eayb-bern-015:33.100.142.177:scr-user:scr-pass:none:NOS:SSH:CL:12:LL0000031218::
+lan-s-de-each-eoss-001:33.96.38.147:scr-user:scr-pass:none:IOS:SSH:CL:12:::
+lan-s-de-each-eoss-002:33.96.38.148:scr-user:scr-pass:none:IOS:SSH:CL:12:::

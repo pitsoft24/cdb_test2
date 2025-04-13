@@ -3,29 +3,246 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Textvorlagen Editor</title>
-    <link rel="stylesheet" href="styles.css">
+    <title>DB Editor</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        h1 {
+            margin-bottom: 20px;
+            color: #333;
+        }
+        
+        .controls {
+            margin-bottom: 20px;
+        }
+        
+        button {
+            padding: 8px 16px;
+            margin-right: 10px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        
+        button:hover {
+            background-color: #45a049;
+        }
+        
+        .delete-btn {
+            background-color: #f44336;
+        }
+        
+        .delete-btn:hover {
+            background-color: #d32f2f;
+        }
+        
+        .table-container {
+            overflow-x: auto;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        th {
+            background-color: #f8f8f8;
+            font-weight: bold;
+        }
+        
+        input {
+            width: 100%;
+            padding: 6px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        
+        tr:hover {
+            background-color: #f5f5f5;
+        }
+
+        .status-message {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 10px 20px;
+            border-radius: 4px;
+            color: white;
+            display: none;
+        }
+
+        .success {
+            background-color: #4CAF50;
+        }
+
+        .error {
+            background-color: #f44336;
+        }
+    </style>
 </head>
 <body>
     <div class="container">
-        <h1>Textvorlagen Editor</h1>
+        <h1>DB Editor</h1>
+        
         <div class="controls">
-            <button id="addRow">Neue Zeile hinzufügen</button>
-            <button id="saveTemplate">Vorlage speichern</button>
+            <button onclick="addRow()">Neue Zeile</button>
+            <button onclick="saveChanges()">Speichern</button>
         </div>
-        <table id="templateTable">
-            <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>Text</th>
-                    <th>Aktionen</th>
-                </tr>
-            </thead>
-            <tbody id="templateBody">
-                <!-- Zeilen werden hier dynamisch eingefügt -->
-            </tbody>
-        </table>
+        
+        <div class="table-container">
+            <table id="dbTable">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>IP</th>
+                        <th>Username</th>
+                        <th>Password</th>
+                        <th>Enable PWD</th>
+                        <th>OS Type</th>
+                        <th>Access</th>
+                        <th>Clear</th>
+                        <th>Poll</th>
+                        <th>LLID</th>
+                        <th>Info</th>
+                        <th>TID</th>
+                        <th>Aktionen</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
     </div>
-    <script src="script.js"></script>
+
+    <div id="statusMessage" class="status-message"></div>
+
+    <script>
+        // Lade Daten beim Start
+        loadData();
+
+        function showMessage(message, isError = false) {
+            const statusDiv = document.getElementById('statusMessage');
+            statusDiv.textContent = message;
+            statusDiv.className = 'status-message ' + (isError ? 'error' : 'success');
+            statusDiv.style.display = 'block';
+            setTimeout(() => {
+                statusDiv.style.display = 'none';
+            }, 3000);
+        }
+
+        function loadData() {
+            fetch('db.txt')
+                .then(response => response.text())
+                .then(data => {
+                    const lines = data.split('\n');
+                    const tbody = document.querySelector('#dbTable tbody');
+                    tbody.innerHTML = '';
+                    
+                    lines.forEach(line => {
+                        if (!line.startsWith('#')) {
+                            const fields = line.split(':');
+                            if (fields.length > 1) {
+                                addTableRow(fields);
+                            }
+                        }
+                    });
+                })
+                .catch(error => {
+                    showMessage('Fehler beim Laden der Daten: ' + error.message, true);
+                });
+        }
+
+        function addTableRow(fields = Array(12).fill('')) {
+            const tbody = document.querySelector('#dbTable tbody');
+            const tr = document.createElement('tr');
+            
+            fields.forEach(field => {
+                const td = document.createElement('td');
+                const input = document.createElement('input');
+                input.value = field;
+                td.appendChild(input);
+                tr.appendChild(td);
+            });
+            
+            const actionsTd = document.createElement('td');
+            const deleteBtn = document.createElement('button');
+            deleteBtn.textContent = 'Löschen';
+            deleteBtn.className = 'delete-btn';
+            deleteBtn.onclick = () => {
+                tr.remove();
+            };
+            actionsTd.appendChild(deleteBtn);
+            tr.appendChild(actionsTd);
+            
+            tbody.appendChild(tr);
+        }
+
+        function addRow() {
+            addTableRow();
+        }
+
+        function saveChanges() {
+            // Sammle die Daten aus der Tabelle
+            const rows = Array.from(document.querySelectorAll('#dbTable tbody tr'));
+            const dataLines = rows.map(row => {
+                const inputs = Array.from(row.querySelectorAll('input'));
+                return inputs.map(input => input.value).join(':');
+            }).join('\n');
+
+            // Hole zuerst die Header aus der originalen Datei
+            fetch('db.txt')
+                .then(response => response.text())
+                .then(data => {
+                    const headerLines = data.split('\n').filter(line => line.startsWith('#'));
+                    const header = headerLines.join('\n');
+                    
+                    // Kombiniere Header und neue Daten
+                    const newContent = header + '\n' + dataLines;
+                    
+                    // Erstelle einen Download der neuen db.txt
+                    const blob = new Blob([newContent], { type: 'text/plain' });
+                    const a = document.createElement('a');
+                    a.href = URL.createObjectURL(blob);
+                    a.download = 'db.txt';
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(a.href);
+
+                    showMessage('Datei wurde zum Download bereitgestellt. Bitte ersetzen Sie die alte db.txt mit der neuen.');
+                })
+                .catch(error => {
+                    showMessage('Fehler beim Speichern: ' + error.message, true);
+                });
+        }
+    </script>
 </body>
 </html> 
