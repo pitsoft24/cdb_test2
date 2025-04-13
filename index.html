@@ -103,11 +103,11 @@
         }
         
         tr:hover {
-            background-color: #f5f9ff;
+            background-color: transparent;
         }
         
         td:hover {
-            background-color: #edf3fe;
+            background-color: transparent;
         }
 
         .status-message {
@@ -202,9 +202,9 @@
                         return nameA.localeCompare(nameB);
                     });
 
-                    // Add sorted rows to table
+                    // Add sorted rows to table without highlighting
                     dataRows.forEach(fields => {
-                        addTableRow(fields);
+                        addTableRow(fields, null, false);
                     });
                 })
                 .catch(error => {
@@ -212,12 +212,14 @@
                 });
         }
 
-        function addTableRow(fields = Array(12).fill(''), insertAfter = null) {
+        function addTableRow(fields = Array(12).fill(''), insertAfter = null, highlight = true) {
             const tbody = document.querySelector('#dbTable tbody');
             const tr = document.createElement('tr');
             
-            // Add highlight class to new row
-            tr.classList.add('highlight-new-row');
+            // Add highlight class to new row only if highlight is true
+            if (highlight) {
+                tr.classList.add('highlight-new-row');
+            }
             
             fields.forEach(field => {
                 const td = document.createElement('td');
