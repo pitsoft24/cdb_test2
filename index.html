@@ -211,7 +211,12 @@
             actionsTd.appendChild(deleteBtn);
             tr.appendChild(actionsTd);
             
-            tbody.appendChild(tr);
+            // Insert at the beginning of the table instead of the end
+            if (tbody.firstChild) {
+                tbody.insertBefore(tr, tbody.firstChild);
+            } else {
+                tbody.appendChild(tr);
+            }
         }
 
         function addRow() {
