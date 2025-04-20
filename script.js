@@ -4,6 +4,7 @@ class TemplateEditor {
         this.addRowBtn = document.getElementById('addRow');
         this.saveTemplateBtn = document.getElementById('saveTemplate');
         this.templates = JSON.parse(localStorage.getItem('templates')) || [];
+        this.globalSearch = document.getElementById('globalSearch');
         
         this.initializeEventListeners();
         this.loadTemplates();
@@ -12,6 +13,31 @@ class TemplateEditor {
     initializeEventListeners() {
         this.addRowBtn.addEventListener('click', () => this.addNewRow());
         this.saveTemplateBtn.addEventListener('click', () => this.saveTemplates());
+        
+        // Add event listener for global search
+        if (this.globalSearch) {
+            this.globalSearch.addEventListener('input', (e) => this.performGlobalSearch(e.target.value));
+        }
+    }
+
+    performGlobalSearch(searchTerm) {
+        const rows = this.templateBody.querySelectorAll('tr');
+        const searchTermLower = searchTerm.toLowerCase();
+
+        rows.forEach(row => {
+            const cells = row.querySelectorAll('td');
+            let found = false;
+
+            cells.forEach(cell => {
+                const cellText = cell.textContent.toLowerCase();
+                if (cellText.includes(searchTermLower)) {
+                    found = true;
+                }
+            });
+
+            // Show/hide row based on search result
+            row.style.display = found ? '' : 'none';
+        });
     }
 
     addNewRow() {

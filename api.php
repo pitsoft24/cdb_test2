@@ -76,15 +76,22 @@ function getEntries() {
 }
 
 function addEntry() {
-    $data = json_decode(file_get_contents('php://input'), true);
+    // Get the raw input
+    $input = file_get_contents('php://input');
+    debugLog("Received raw input for new entry", ['input' => $input]);
     
-    $requiredFields = ['name', 'ip', 'username', 'password', 'enablePassword', 'osType', 'access', 'clear', 'pollInterval', 'locationId', 'info', 'ticketId'];
-    $missingFields = array_diff($requiredFields, array_keys($data));
-    
-    if (!empty($missingFields)) {
-        return ['error' => 'Missing required fields: ' . implode(', ', $missingFields)];
+    // Parse the input data
+    $data = json_decode($input, true);
+    if (!$data) {
+        debugLog("Failed to parse JSON input");
+        return ['error' => 'Invalid JSON data'];
     }
-    
+
+    // Get the insertion line number if provided
+    $insertAfterLine = isset($data['insertAfterLine']) ? $data['insertAfterLine'] : null;
+    debugLog("Insert after line", ['insertAfterLine' => $insertAfterLine]);
+
+    // Create the new entry line
     $entry = implode(':', [
         $data['name'],
         $data['ip'],
@@ -99,42 +106,108 @@ function addEntry() {
         $data['info'],
         $data['ticketId']
     ]) . "\n";
-    
-    if (file_put_contents(DB_FILE, $entry, FILE_APPEND) === false) {
-        return ['error' => 'Failed to write to database'];
+
+    if ($insertAfterLine !== null) {
+        // Read all lines
+        $lines = file(DB_FILE, FILE_IGNORE_NEW_LINES);
+        $headerLines = [];
+        $dataLines = [];
+        $inHeader = true;
+
+        // Separate header and data lines
+        foreach ($lines as $line) {
+            if ($inHeader && (str_starts_with(trim($line), '#') || str_starts_with(trim($line), 'HDR:'))) {
+                $headerLines[] = $line;
+            } else {
+                $inHeader = false;
+                $dataLines[] = $line;
+            }
+        }
+
+        // Find the actual position to insert (accounting for header lines)
+        $insertPosition = $insertAfterLine - count($headerLines) + 1;
+        array_splice($dataLines, $insertPosition, 0, trim($entry));
+
+        // Combine everything back
+        $newContent = implode("\n", $headerLines) . "\n" . implode("\n", $dataLines) . "\n";
+        
+        if (file_put_contents(DB_FILE, $newContent) === false) {
+            debugLog("Failed to write to database");
+            return ['error' => 'Failed to write to database'];
+        }
+    } else {
+        // Append to end of file if no insertion point specified
+        if (file_put_contents(DB_FILE, $entry, FILE_APPEND) === false) {
+            debugLog("Failed to write to database");
+            return ['error' => 'Failed to write to database'];
+        }
     }
     
     createBackup();
+    debugLog("Entry added successfully");
     return ['success' => true];
 }
 
 function deleteEntry($lineNumber) {
-    $lines = file(DB_FILE);
-    $dataLines = array_filter($lines, function($line) {
-        return !str_starts_with(trim($line), '#');
-    });
-    $dataLines = array_values($dataLines);
+    debugLog("Deleting entry at line", ['lineNumber' => $lineNumber]);
     
-    if (!isset($dataLines[$lineNumber])) {
+    // Read all lines
+    $lines = file(DB_FILE, FILE_IGNORE_NEW_LINES);
+    if ($lines === false) {
+        debugLog("Failed to read database file");
+        return ['error' => 'Failed to read database file'];
+    }
+
+    // Separate header and data lines
+    $headerLines = [];
+    $dataLines = [];
+    $inHeader = true;
+
+    foreach ($lines as $line) {
+        if ($inHeader && (str_starts_with(trim($line), '#') || str_starts_with(trim($line), 'HDR:'))) {
+            $headerLines[] = $line;
+        } else {
+            $inHeader = false;
+            $dataLines[] = $line;
+        }
+    }
+
+    debugLog("File structure", [
+        'totalLines' => count($lines),
+        'headerLines' => count($headerLines),
+        'dataLines' => count($dataLines),
+        'targetLine' => $lineNumber
+    ]);
+
+    // Calculate actual index in dataLines (accounting for headers)
+    $dataIndex = $lineNumber - count($headerLines);
+    
+    // Check if the line exists in dataLines
+    if (!isset($dataLines[$dataIndex])) {
+        debugLog("Line not found", ['dataIndex' => $dataIndex]);
         return ['error' => 'Entry not found'];
     }
-    
-    // Get all header lines
-    $headerLines = array_filter($lines, function($line) {
-        return str_starts_with(trim($line), '#');
-    });
-    
-    // Remove the entry from data lines
-    unset($dataLines[$lineNumber]);
-    
-    // Combine headers and remaining data
-    $newContent = implode('', $headerLines) . implode('', $dataLines);
-    
+
+    // Remove the line
+    unset($dataLines[$dataIndex]);
+    $dataLines = array_values($dataLines); // Reindex array
+
+    // Combine everything back
+    $newContent = implode("\n", $headerLines) . "\n" . implode("\n", $dataLines);
+    if (!empty($dataLines)) {
+        $newContent .= "\n"; // Add final newline if we have data
+    }
+
+    debugLog("New content created", ['contentLength' => strlen($newContent)]);
+
+    // Write back to file
     if (file_put_contents(DB_FILE, $newContent) === false) {
+        debugLog("Failed to write to database");
         return ['error' => 'Failed to delete entry'];
     }
-    
+
     createBackup();
+    debugLog("Entry deleted successfully");
     return ['success' => true];
 }
 
@@ -236,6 +309,93 @@ function createBackup() {
     return true;
 }
 
+function getBackups() {
+    $backups = [];
+    
+    // Ensure history directory exists
+    if (!file_exists(HISTORY_DIR)) {
+        mkdir(HISTORY_DIR, 0777, true);
+        return $backups;
+    }
+    
+    // Get all backup files
+    $files = glob(HISTORY_DIR . '/db_*');
+    debugLog("Found backup files", ['files' => $files]);
+    
+    if ($files === false || empty($files)) {
+        debugLog("No backup files found");
+        return $backups;
+    }
+    
+    foreach ($files as $file) {
+        $filename = basename($file);
+        // Extract date from filename (db_YYYY_MM_DD_HH_mm)
+        if (preg_match('/db_(\d{4})_(\d{2})_(\d{2})_(\d{2})_(\d{2})/', $filename, $matches)) {
+            $datetime = sprintf('%s-%s-%s %s:%s:00',
+                $matches[1], // Year
+                $matches[2], // Month
+                $matches[3], // Day
+                $matches[4], // Hour
+                $matches[5]  // Minute
+            );
+            
+            $size = filesize($file);
+            $sizeKB = number_format($size / 1024, 2); // Format to 2 decimal places
+            
+            $backups[] = [
+                'filename' => $filename,
+                'timestamp' => $datetime,
+                'size' => $sizeKB
+            ];
+            debugLog("Added backup", [
+                'filename' => $filename,
+                'timestamp' => $datetime,
+                'size' => $sizeKB
+            ]);
+        }
+    }
+    
+    // Sort backups by timestamp descending (newest first)
+    usort($backups, function($a, $b) {
+        return strtotime($b['timestamp']) - strtotime($a['timestamp']);
+    });
+    
+    debugLog("Final backup list", $backups);
+    return $backups;
+}
+
+function restoreBackup($filename) {
+    $backupFile = HISTORY_DIR . '/' . $filename;
+    
+    // Validate filename format
+    if (!preg_match('/^db_\d{4}_\d{2}_\d{2}_\d{2}_\d{2}$/', $filename)) {
+        debugLog("Invalid backup filename", ['filename' => $filename]);
+        return ['error' => 'Invalid backup filename'];
+    }
+    
+    // Check if backup file exists
+    if (!file_exists($backupFile)) {
+        debugLog("Backup file not found", ['path' => $backupFile]);
+        return ['error' => 'Backup file not found'];
+    }
+    
+    // Create backup of current state before restore
+    createBackup();
+    
+    // Restore from backup
+    if (!copy($backupFile, DB_FILE)) {
+        debugLog("Failed to restore backup", [
+            'source' => $backupFile,
+            'destination' => DB_FILE,
+            'error' => error_get_last()
+        ]);
+        return ['error' => 'Failed to restore backup'];
+    }
+    
+    debugLog("Backup restored successfully", ['filename' => $filename]);
+    return ['success' => true];
+}
+
 // Handle requests
 $method = $_SERVER['REQUEST_METHOD'];
 $path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
@@ -248,38 +408,42 @@ debugLog("Incoming request", [
     'raw_input' => file_get_contents('php://input')
 ]);
 
-// Get the line number from the path for PUT and DELETE requests
-$lineNumber = null;
-if ($method === 'PUT' || $method === 'DELETE') {
-    // Remove any trailing slashes and split the path
-    $pathParts = explode('/', trim($path, '/'));
-    $lineNumber = isset($pathParts[count($pathParts) - 1]) ? intval($pathParts[count($pathParts) - 1]) : null;
-    debugLog("Extracted line number", ['lineNumber' => $lineNumber, 'pathParts' => $pathParts]);
-}
+// Parse path segments
+$pathSegments = array_values(array_filter(explode('/', $path)));
+$resource = $pathSegments[0] ?? '';
+$id = $pathSegments[1] ?? null;
 
 switch ($method) {
     case 'GET':
-        echo json_encode(getEntries());
+        if ($resource === 'backups') {
+            echo json_encode(getBackups());
+        } else {
+            echo json_encode(getEntries());
+        }
         break;
     case 'POST':
-        echo json_encode(addEntry());
+        if ($resource === 'backups' && $id) {
+            echo json_encode(restoreBackup($id));
+        } else {
+            echo json_encode(addEntry());
+        }
         break;
     case 'DELETE':
-        if ($lineNumber === null) {
+        if ($id === null) {
             http_response_code(400);
             echo json_encode(['error' => 'Line number is required for DELETE']);
             break;
         }
-        echo json_encode(deleteEntry($lineNumber));
+        echo json_encode(deleteEntry($id));
         break;
     case 'PUT':
-        if ($lineNumber === null) {
+        if ($id === null) {
             debugLog("PUT request missing line number", $_SERVER);
             http_response_code(400);
             echo json_encode(['error' => 'Line number is required for PUT']);
             break;
         }
-        $result = editEntry($lineNumber);
+        $result = editEntry($id);
         debugLog("Edit result", $result);
         echo json_encode($result);
         break;

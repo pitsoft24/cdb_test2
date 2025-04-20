@@ -1,45 +1,62 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-bs-theme="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CDB Entry Manager</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
+        body {
+            background-color: #212529;
+            color: #e9ecef;
+        }
         .excel-table {
             width: 100%;
             border-collapse: collapse;
             margin-top: 20px;
             font-family: Arial, sans-serif;
+            background-color: #2c3034;
         }
         .excel-table th, .excel-table td {
-            border: 1px solid #ddd;
+            border: 1px solid #495057;
             padding: 8px;
             text-align: left;
+            color: #e9ecef;
         }
         .excel-table th {
-            background-color: #f2f2f2;
+            background-color: #343a40;
             position: sticky;
             top: 0;
             z-index: 1;
         }
         .excel-table tr:nth-child(even) {
-            background-color: #f9f9f9;
+            background-color: #343a40;
         }
         .excel-table tr:hover {
-            background-color: #f5f5f5;
+            background-color: #495057;
         }
         .table-container {
-            max-height: 600px;
+            overflow-x: auto;
             overflow-y: auto;
             margin-top: 20px;
+            width: 100%;
+        }
+        .container {
+            max-width: 100%;
+            padding-left: 15px;
+            padding-right: 15px;
         }
         .btn-action {
             padding: 4px 8px;
             margin: 0 2px;
         }
+        .action-buttons {
+            white-space: nowrap;
+            display: flex;
+            gap: 4px;
+        }
         .form-container {
-            background-color: #f8f9fa;
+            background-color: #343a40;
             padding: 20px;
             border-radius: 5px;
             margin-bottom: 20px;
@@ -47,6 +64,30 @@
         }
         .form-control {
             min-height: 38px;
+            background-color: #2c3034;
+            border-color: #495057;
+            color: #e9ecef;
+        }
+        .form-control:focus {
+            background-color: #2c3034;
+            border-color: #0d6efd;
+            color: #e9ecef;
+        }
+        .form-label {
+            color: #e9ecef;
+        }
+        .modal-content {
+            background-color: #343a40;
+            color: #e9ecef;
+        }
+        .modal-header {
+            border-bottom: 1px solid #495057;
+        }
+        .modal-footer {
+            border-top: 1px solid #495057;
+        }
+        .btn-close {
+            filter: invert(1) grayscale(100%) brightness(200%);
         }
         textarea.form-control {
             min-height: 80px;
@@ -63,7 +104,39 @@
     <div class="container py-4">
         <div class="header-container">
             <h1 class="mb-0">CDB Entry Manager</h1>
-            <button class="btn btn-primary" onclick="toggleAddForm()">Add New Entry</button>
+            <div class="d-flex align-items-center">
+                <div class="me-3">
+                    <input type="text" id="globalSearch" class="form-control" placeholder="Search in all fields...">
+                </div>
+                <button class="btn btn-primary me-2" onclick="toggleBackupModal()">Manage Backups</button>
+                <button class="btn btn-primary" onclick="toggleAddForm()">Add New Entry</button>
+            </div>
+        </div>
+        
+        <!-- Backup Modal -->
+        <div class="modal fade" id="backupModal" tabindex="-1">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Backup Management</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="table-container" style="max-height: 400px;">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Timestamp</th>
+                                        <th>Size</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="backupsList"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
         
         <!-- Add Entry Form -->
@@ -138,6 +211,8 @@
                         <th>Name</th>
                         <th>IP Address</th>
                         <th>Username</th>
+                        <th>Password</th>
+                        <th>Enable Password</th>
                         <th>OS Type</th>
                         <th>Access</th>
                         <th>Status</th>
@@ -228,12 +303,43 @@
     <script>
         const API_URL = 'api.php';
         let editModal;
+        let backupModal;
+        let globalSearch;
 
-        // Initialize Bootstrap modal and form visibility
+        // Initialize Bootstrap modals and form visibility
         document.addEventListener('DOMContentLoaded', () => {
             editModal = new bootstrap.Modal(document.getElementById('editModal'));
+            backupModal = new bootstrap.Modal(document.getElementById('backupModal'));
+            globalSearch = document.getElementById('globalSearch');
+            
+            // Initialize search functionality
+            if (globalSearch) {
+                globalSearch.addEventListener('input', (e) => performGlobalSearch(e.target.value));
+            }
+            
             loadEntries();
         });
+
+        // Global search function
+        function performGlobalSearch(searchTerm) {
+            const rows = document.querySelectorAll('#entriesList tr');
+            const searchTermLower = searchTerm.toLowerCase();
+
+            rows.forEach(row => {
+                const cells = row.querySelectorAll('td');
+                let found = false;
+
+                cells.forEach(cell => {
+                    const cellText = cell.textContent.toLowerCase();
+                    if (cellText.includes(searchTermLower)) {
+                        found = true;
+                    }
+                });
+
+                // Show/hide row based on search result
+                row.style.display = found ? '' : 'none';
+            });
+        }
 
         // Toggle Add Entry form visibility
         function toggleAddForm() {
@@ -243,6 +349,12 @@
             } else {
                 formContainer.style.display = 'none';
             }
+        }
+
+        // Toggle Backup Modal
+        function toggleBackupModal() {
+            loadBackups();
+            backupModal.show();
         }
 
         // Load all entries
@@ -260,6 +372,8 @@
                         <td>${entry.name}</td>
                         <td>${entry.ip}</td>
                         <td>${entry.username}</td>
+                        <td>${entry.password}</td>
+                        <td>${entry.enablePassword}</td>
                         <td>${entry.osType}</td>
                         <td>${entry.access}</td>
                         <td>${entry.clear}</td>
@@ -267,15 +381,82 @@
                         <td>${entry.locationId}</td>
                         <td>${entry.info}</td>
                         <td>${entry.ticketId}</td>
-                        <td>
-                            <button class="btn btn-sm btn-primary btn-action" onclick="editEntry(${entry.lineNumber}, ${JSON.stringify(entry).replace(/"/g, '&quot;')})">Edit</button>
-                            <button class="btn btn-sm btn-danger btn-action" onclick="deleteEntry(${entry.lineNumber})">Delete</button>
+                        <td class="action-buttons">
+                            <button class="btn btn-sm btn-primary" onclick="editEntry(${entry.lineNumber}, ${JSON.stringify(entry).replace(/"/g, '&quot;')})">Edit</button>
+                            <button class="btn btn-sm btn-success" onclick="copyEntry(${entry.lineNumber}, ${JSON.stringify(entry).replace(/"/g, '&quot;')})">Copy</button>
+                            <button class="btn btn-sm btn-danger" onclick="deleteEntry(${entry.lineNumber})">Delete</button>
                         </td>
                     `;
                     entriesList.appendChild(row);
                 });
             } catch (error) {
                 console.error('Error loading entries:', error);
+            }
+        }
+
+        // Load backups
+        async function loadBackups() {
+            try {
+                const response = await fetch(`${API_URL}/backups`);
+                const backups = await response.json();
+                const backupsList = document.getElementById('backupsList');
+                backupsList.innerHTML = '';
+                
+                if (backups.length === 0) {
+                    backupsList.innerHTML = '<tr><td colspan="3" class="text-center">No backups available</td></tr>';
+                    return;
+                }
+                
+                backups.forEach(backup => {
+                    const row = document.createElement('tr');
+                    // Format timestamp to local date and time
+                    const date = new Date(backup.timestamp + ' UTC'); // Add UTC to ensure correct parsing
+                    const formattedDate = date.toLocaleString('de-DE', {
+                        year: 'numeric',
+                        month: '2-digit',
+                        day: '2-digit',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    });
+                    
+                    row.innerHTML = `
+                        <td>${formattedDate}</td>
+                        <td>${backup.size} KB</td>
+                        <td>
+                            <button class="btn btn-sm btn-primary" onclick="restoreBackup('${backup.filename}')">
+                                Restore
+                            </button>
+                        </td>
+                    `;
+                    backupsList.appendChild(row);
+                });
+            } catch (error) {
+                console.error('Error loading backups:', error);
+                const backupsList = document.getElementById('backupsList');
+                backupsList.innerHTML = '<tr><td colspan="3" class="text-center text-danger">Failed to load backups</td></tr>';
+            }
+        }
+
+        // Restore backup
+        async function restoreBackup(filename) {
+            if (confirm('Are you sure you want to restore this backup? Current data will be backed up before restore.')) {
+                try {
+                    const response = await fetch(`${API_URL}/backups/${filename}`, {
+                        method: 'POST'
+                    });
+                    
+                    if (response.ok) {
+                        backupModal.hide();
+                        loadEntries();
+                        alert('Backup restored successfully');
+                    } else {
+                        const error = await response.json();
+                        throw new Error(error.error || 'Failed to restore backup');
+                    }
+                } catch (error) {
+                    console.error('Error restoring backup:', error);
+                    alert(error.message);
+                }
             }
         }
 
@@ -378,22 +559,74 @@
 
         // Delete entry
         async function deleteEntry(lineNumber) {
-            if (confirm('Are you sure you want to delete this entry?')) {
+            if (confirm('Sind Sie sicher, dass Sie diesen Eintrag löschen möchten?')) {
                 try {
+                    console.log('Deleting entry at line:', lineNumber);
                     const response = await fetch(`${API_URL}/${lineNumber}`, {
-                        method: 'DELETE'
+                        method: 'DELETE',
+                        headers: {
+                            'Accept': 'application/json'
+                        }
                     });
 
-                    if (response.ok) {
-                        loadEntries();
+                    const result = await response.json();
+                    console.log('Delete response:', result);
+
+                    if (response.ok && result.success) {
+                        await loadEntries();
+                        console.log('Entries reloaded after delete');
                     } else {
-                        const error = await response.json();
-                        throw new Error(error.error || 'Failed to delete entry');
+                        throw new Error(result.error || 'Fehler beim Löschen des Eintrags');
                     }
                 } catch (error) {
                     console.error('Error deleting entry:', error);
-                    alert(error.message);
+                    alert('Fehler beim Löschen des Eintrags: ' + error.message);
                 }
+            }
+        }
+
+        // Copy entry function
+        async function copyEntry(lineNumber, entry) {
+            // Create a new entry object without the line number
+            const newEntry = {
+                name: entry.name + '_copy',
+                ip: entry.ip || '',
+                username: 'scr-user',  // Always use scr-user
+                password: 'scr-pass',  // Always use scr-pass
+                enablePassword: 'none', // Always use none
+                osType: entry.osType || '',
+                access: entry.access || 'SSH',
+                clear: entry.clear || 'CL',
+                pollInterval: entry.pollInterval || '15',
+                locationId: entry.locationId || '',
+                info: entry.info || '',
+                ticketId: entry.ticketId || '',
+                insertAfterLine: lineNumber  // Add the line number where to insert
+            };
+
+            try {
+                console.log('Copying entry:', newEntry);
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify(newEntry)
+                });
+
+                const result = await response.json();
+                console.log('Copy response:', result);
+
+                if (response.ok && result.success) {
+                    await loadEntries();
+                    console.log('Entries reloaded after copy');
+                } else {
+                    throw new Error(result.error || 'Failed to copy entry');
+                }
+            } catch (error) {
+                console.error('Error copying entry:', error);
+                alert('Fehler beim Kopieren des Eintrags: ' + error.message);
             }
         }
     </script>
