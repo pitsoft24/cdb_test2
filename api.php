@@ -212,9 +212,28 @@ function editEntry($lineNumber) {
 }
 
 function createBackup() {
-    $timestamp = date('Y-m-d_H-i-s');
-    $backupFile = HISTORY_DIR . '/backup_' . $timestamp . '.txt';
-    copy(DB_FILE, $backupFile);
+    $timestamp = date('Y_m_d_H_i');
+    $backupFile = HISTORY_DIR . '/db_' . $timestamp;
+    
+    // Ensure history directory exists
+    if (!file_exists(HISTORY_DIR)) {
+        mkdir(HISTORY_DIR, 0777, true);
+    }
+    
+    // Create backup
+    if (!copy(DB_FILE, $backupFile)) {
+        debugLog("Failed to create backup", [
+            'source' => DB_FILE,
+            'destination' => $backupFile,
+            'error' => error_get_last()
+        ]);
+        return false;
+    }
+    
+    debugLog("Backup created successfully", [
+        'file' => $backupFile
+    ]);
+    return true;
 }
 
 // Handle requests
