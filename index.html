@@ -1,314 +1,395 @@
 <!DOCTYPE html>
-<html lang="de">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DB Editor</title>
+    <title>CDB Entry Manager</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+        .entry-card {
+            transition: all 0.3s ease;
         }
-        
-        body {
-            font-family: Arial, sans-serif;
-            line-height: 1.6;
-            padding: 20px;
-            background-color: #f5f5f5;
+        .entry-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
         }
-        
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
-            background-color: white;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        .btn-action {
+            opacity: 0.8;
+            transition: opacity 0.2s ease;
         }
-        
-        h1 {
-            margin-bottom: 20px;
-            color: #333;
+        .btn-action:hover {
+            opacity: 1;
         }
-        
-        .controls {
-            margin-bottom: 20px;
-        }
-        
-        button {
-            padding: 8px 16px;
-            margin-right: 10px;
-            background-color: #4CAF50;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-        
-        button:hover {
-            background-color: #45a049;
-        }
-        
-        .delete-btn {
-            background-color: #f44336;
-        }
-        
-        .delete-btn:hover {
-            background-color: #d32f2f;
-        }
-
-        .insert-btn {
-            background-color: #2196F3;
-        }
-        
-        .insert-btn:hover {
-            background-color: #1976D2;
-        }
-        
-        .save-btn {
-            background-color: #FF9800;
-        }
-        
-        .save-btn:hover {
-            background-color: #F57C00;
-        }
-        
-        .table-container {
-            overflow-x: auto;
-        }
-        
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
-        }
-        
-        th, td {
-            padding: 12px;
-            text-align: left;
-            border-bottom: 1px solid #ddd;
-        }
-        
-        th {
-            background-color: #f8f8f8;
+        .field-label {
             font-weight: bold;
+            color: #495057;
         }
-        
-        input {
-            width: 100%;
-            padding: 6px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-        }
-        
-        tr:hover {
-            background-color: transparent;
-        }
-        
-        td:hover {
-            background-color: transparent;
-        }
-
-        .status-message {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            padding: 10px 20px;
-            border-radius: 4px;
-            color: white;
-            display: none;
-        }
-
-        .success {
-            background-color: #4CAF50;
-        }
-
-        .error {
-            background-color: #f44336;
-        }
-
-        .highlight-new-row {
-            background-color: #e3f2fd !important;
+        .field-value {
+            margin-bottom: 0.5rem;
         }
     </style>
 </head>
-<body>
-    <div class="container">
-        <h1>DB Editor</h1>
+<body class="bg-light">
+    <div class="container py-5">
+        <h1 class="text-center mb-5">CDB Entry Manager</h1>
         
-        <div class="controls">
-            <button onclick="addRow()">Neue Zeile</button>
+        <!-- Add Entry Form -->
+        <div class="card mb-4 shadow-sm">
+            <div class="card-body">
+                <form id="addEntryForm">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="name" class="form-label">Name (6-9 chars)</label>
+                            <input type="text" class="form-control" id="name" required maxlength="9">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="ip" class="form-label">IP Address</label>
+                            <input type="text" class="form-control" id="ip" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="username" class="form-label">Username</label>
+                            <input type="text" class="form-control" id="username" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="password" class="form-label">Password</label>
+                            <input type="password" class="form-control" id="password" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="enablePassword" class="form-label">Enable Password</label>
+                            <input type="password" class="form-control" id="enablePassword" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="osType" class="form-label">OS Type</label>
+                            <select class="form-select" id="osType" required>
+                                <option value="IOS">IOS</option>
+                                <option value="COS">COS</option>
+                                <option value="NOS">NOS</option>
+                                <option value="JUNOS">JUNOS</option>
+                                <option value="EW">EW</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="access" class="form-label">Access Type</label>
+                            <select class="form-select" id="access" required>
+                                <option value="TEL">Telnet</option>
+                                <option value="SSH">SSH</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="clear" class="form-label">Clear Status</label>
+                            <select class="form-select" id="clear" required>
+                                <option value="CL">Clear</option>
+                                <option value="NOCL">NoClear</option>
+                                <option value="OFF">Off (Maintenance)</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="pollInterval" class="form-label">Poll Interval (minutes)</label>
+                            <input type="number" class="form-control" id="pollInterval" required min="1" max="59">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="locationId" class="form-label">Location ID</label>
+                            <input type="text" class="form-control" id="locationId" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="info" class="form-label">Information</label>
+                            <input type="text" class="form-control" id="info">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="ticketId" class="form-label">Ticket ID</label>
+                            <input type="text" class="form-control" id="ticketId">
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <button type="submit" class="btn btn-primary">Add Entry</button>
+                    </div>
+                </form>
+            </div>
         </div>
         
-        <div class="table-container">
-            <table id="dbTable">
-                <thead>
-                    <tr>
-                        <th>Name</th>
-                        <th>IP</th>
-                        <th>Username</th>
-                        <th>Password</th>
-                        <th>Enable PWD</th>
-                        <th>OS Type</th>
-                        <th>Access</th>
-                        <th>Clear</th>
-                        <th>Poll</th>
-                        <th>LLID</th>
-                        <th>Info</th>
-                        <th>TID</th>
-                        <th>Aktionen</th>
-                    </tr>
-                </thead>
-                <tbody></tbody>
-            </table>
+        <!-- Entries List -->
+        <div id="entriesList" class="row g-4"></div>
+    </div>
+
+    <!-- Edit Modal -->
+    <div class="modal fade" id="editModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Edit Entry</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="editForm">
+                        <input type="hidden" id="editLineNumber">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label for="editName" class="form-label">Name (6-9 chars)</label>
+                                <input type="text" class="form-control" id="editName" required maxlength="9">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="editIp" class="form-label">IP Address</label>
+                                <input type="text" class="form-control" id="editIp" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="editUsername" class="form-label">Username</label>
+                                <input type="text" class="form-control" id="editUsername" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="editPassword" class="form-label">Password</label>
+                                <input type="password" class="form-control" id="editPassword" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="editEnablePassword" class="form-label">Enable Password</label>
+                                <input type="password" class="form-control" id="editEnablePassword" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="editOsType" class="form-label">OS Type</label>
+                                <select class="form-select" id="editOsType" required>
+                                    <option value="IOS">IOS</option>
+                                    <option value="COS">COS</option>
+                                    <option value="NOS">NOS</option>
+                                    <option value="JUNOS">JUNOS</option>
+                                    <option value="EW">EW</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="editAccess" class="form-label">Access Type</label>
+                                <select class="form-select" id="editAccess" required>
+                                    <option value="TEL">Telnet</option>
+                                    <option value="SSH">SSH</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="editClear" class="form-label">Clear Status</label>
+                                <select class="form-select" id="editClear" required>
+                                    <option value="CL">Clear</option>
+                                    <option value="NOCL">NoClear</option>
+                                    <option value="OFF">Off (Maintenance)</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="editPollInterval" class="form-label">Poll Interval (minutes)</label>
+                                <input type="number" class="form-control" id="editPollInterval" required min="1" max="59">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="editLocationId" class="form-label">Location ID</label>
+                                <input type="text" class="form-control" id="editLocationId" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="editInfo" class="form-label">Information</label>
+                                <input type="text" class="form-control" id="editInfo">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="editTicketId" class="form-label">Ticket ID</label>
+                                <input type="text" class="form-control" id="editTicketId">
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="saveEdit">Save Changes</button>
+                </div>
+            </div>
         </div>
     </div>
 
-    <div id="statusMessage" class="status-message"></div>
-
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        // Lade Daten beim Start
-        loadData();
+        const API_URL = 'api.php';
+        let editModal;
 
-        function showMessage(message, isError = false) {
-            const statusDiv = document.getElementById('statusMessage');
-            statusDiv.textContent = message;
-            statusDiv.className = 'status-message ' + (isError ? 'error' : 'success');
-            statusDiv.style.display = 'block';
-            setTimeout(() => {
-                statusDiv.style.display = 'none';
-            }, 3000);
-        }
+        // Initialize Bootstrap modal
+        document.addEventListener('DOMContentLoaded', () => {
+            editModal = new bootstrap.Modal(document.getElementById('editModal'));
+            loadEntries();
+        });
 
-        function loadData() {
-            fetch('db.txt')
-                .then(response => response.text())
-                .then(data => {
-                    const lines = data.split('\n');
-                    const tbody = document.querySelector('#dbTable tbody');
-                    tbody.innerHTML = '';
-                    
-                    // Filter out header lines and create array of data rows
-                    const dataRows = lines
-                        .filter(line => !line.startsWith('#'))
-                        .map(line => line.split(':'))
-                        .filter(fields => fields.length > 1);
-
-                    // Sort data rows by the first field (Name)
-                    dataRows.sort((a, b) => {
-                        const nameA = a[0].toUpperCase();
-                        const nameB = b[0].toUpperCase();
-                        return nameA.localeCompare(nameB);
-                    });
-
-                    // Add sorted rows to table without highlighting
-                    dataRows.forEach(fields => {
-                        addTableRow(fields, null, false);
-                    });
-                })
-                .catch(error => {
-                    showMessage('Fehler beim Laden der Daten: ' + error.message, true);
-                });
-        }
-
-        function addTableRow(fields = Array(12).fill(''), insertAfter = null, highlight = true) {
-            const tbody = document.querySelector('#dbTable tbody');
-            const tr = document.createElement('tr');
-            
-            // Add highlight class to new row only if highlight is true
-            if (highlight) {
-                tr.classList.add('highlight-new-row');
-            }
-            
-            fields.forEach(field => {
-                const td = document.createElement('td');
-                const input = document.createElement('input');
-                input.value = field;
-                td.appendChild(input);
-                tr.appendChild(td);
-            });
-            
-            const actionsTd = document.createElement('td');
-            
-            // Save button
-            const saveBtn = document.createElement('button');
-            saveBtn.textContent = 'Speichern';
-            saveBtn.className = 'save-btn';
-            saveBtn.onclick = () => {
-                saveChanges();
-            };
-            actionsTd.appendChild(saveBtn);
-            
-            // Insert button
-            const insertBtn = document.createElement('button');
-            insertBtn.textContent = 'Neue Zeile';
-            insertBtn.className = 'insert-btn';
-            insertBtn.onclick = () => {
-                // Get all input values from current row
-                const currentInputs = Array.from(tr.querySelectorAll('input'));
-                const currentValues = currentInputs.map(input => input.value);
-                addTableRow(currentValues, tr);
-            };
-            actionsTd.appendChild(insertBtn);
-            
-            // Delete button
-            const deleteBtn = document.createElement('button');
-            deleteBtn.textContent = 'Löschen';
-            deleteBtn.className = 'delete-btn';
-            deleteBtn.onclick = () => {
-                tr.remove();
-            };
-            actionsTd.appendChild(deleteBtn);
-            
-            tr.appendChild(actionsTd);
-            
-            if (insertAfter) {
-                tbody.insertBefore(tr, insertAfter.nextSibling);
-            } else if (tbody.firstChild) {
-                tbody.insertBefore(tr, tbody.firstChild);
-            } else {
-                tbody.appendChild(tr);
+        // Load all entries
+        async function loadEntries() {
+            try {
+                const response = await fetch(API_URL);
+                const entries = await response.json();
+                displayEntries(entries);
+            } catch (error) {
+                console.error('Error loading entries:', error);
+                alert('Failed to load entries');
             }
         }
 
-        function addRow() {
-            addTableRow();
+        // Display entries in the UI
+        function displayEntries(entries) {
+            const entriesList = document.getElementById('entriesList');
+            entriesList.innerHTML = entries.map(entry => `
+                <div class="col-md-6 col-lg-4">
+                    <div class="card entry-card h-100">
+                        <div class="card-body">
+                            <div class="field-value">
+                                <span class="field-label">Name:</span> ${entry.name}
+                            </div>
+                            <div class="field-value">
+                                <span class="field-label">IP:</span> ${entry.ip}
+                            </div>
+                            <div class="field-value">
+                                <span class="field-label">Username:</span> ${entry.username}
+                            </div>
+                            <div class="field-value">
+                                <span class="field-label">OS Type:</span> ${entry.osType}
+                            </div>
+                            <div class="field-value">
+                                <span class="field-label">Access:</span> ${entry.access}
+                            </div>
+                            <div class="field-value">
+                                <span class="field-label">Status:</span> ${entry.clear}
+                            </div>
+                            <div class="field-value">
+                                <span class="field-label">Poll:</span> ${entry.pollInterval} min
+                            </div>
+                            <div class="field-value">
+                                <span class="field-label">Location:</span> ${entry.locationId}
+                            </div>
+                            <div class="d-flex justify-content-end gap-2 mt-3">
+                                <button class="btn btn-sm btn-outline-primary btn-action" onclick="openEditModal(${entry.lineNumber})">
+                                    Edit
+                                </button>
+                                <button class="btn btn-sm btn-outline-danger btn-action" onclick="deleteEntry(${entry.lineNumber})">
+                                    Delete
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
         }
 
-        function saveChanges() {
-            // Sammle die Daten aus der Tabelle
-            const rows = Array.from(document.querySelectorAll('#dbTable tbody tr'));
-            const dataLines = rows.map(row => {
-                const inputs = Array.from(row.querySelectorAll('input'));
-                return inputs.map(input => input.value).join(':');
-            }).join('\n');
+        // Add new entry
+        document.getElementById('addEntryForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const entryData = {
+                name: document.getElementById('name').value.trim(),
+                ip: document.getElementById('ip').value.trim(),
+                username: document.getElementById('username').value.trim(),
+                password: document.getElementById('password').value,
+                enablePassword: document.getElementById('enablePassword').value,
+                osType: document.getElementById('osType').value,
+                access: document.getElementById('access').value,
+                clear: document.getElementById('clear').value,
+                pollInterval: document.getElementById('pollInterval').value,
+                locationId: document.getElementById('locationId').value.trim(),
+                info: document.getElementById('info').value.trim(),
+                ticketId: document.getElementById('ticketId').value.trim()
+            };
 
-            // Hole zuerst die Header aus der originalen Datei
-            fetch('db.txt')
-                .then(response => response.text())
-                .then(data => {
-                    const headerLines = data.split('\n').filter(line => line.startsWith('#'));
-                    const header = headerLines.join('\n');
-                    
-                    // Kombiniere Header und neue Daten
-                    const newContent = header + '\n' + dataLines;
-                    
-                    // Erstelle einen Download der neuen db.txt
-                    const blob = new Blob([newContent], { type: 'text/plain' });
-                    const a = document.createElement('a');
-                    a.href = URL.createObjectURL(blob);
-                    a.download = 'db.txt';
-                    document.body.appendChild(a);
-                    a.click();
-                    document.body.removeChild(a);
-                    URL.revokeObjectURL(a.href);
-
-                    showMessage('Datei wurde zum Download bereitgestellt. Bitte ersetzen Sie die alte db.txt mit der neuen.');
-                })
-                .catch(error => {
-                    showMessage('Fehler beim Speichern: ' + error.message, true);
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(entryData)
                 });
+
+                if (response.ok) {
+                    document.getElementById('addEntryForm').reset();
+                    loadEntries();
+                } else {
+                    const error = await response.json();
+                    throw new Error(error.error || 'Failed to add entry');
+                }
+            } catch (error) {
+                console.error('Error adding entry:', error);
+                alert(error.message);
+            }
+        });
+            
+        // Open edit modal
+        async function openEditModal(lineNumber) {
+            try {
+                const response = await fetch(API_URL);
+                const entries = await response.json();
+                const entry = entries.find(e => e.lineNumber === lineNumber);
+                
+                if (entry) {
+                    document.getElementById('editLineNumber').value = lineNumber;
+                    document.getElementById('editName').value = entry.name;
+                    document.getElementById('editIp').value = entry.ip;
+                    document.getElementById('editUsername').value = entry.username;
+                    document.getElementById('editPassword').value = entry.password;
+                    document.getElementById('editEnablePassword').value = entry.enablePassword;
+                    document.getElementById('editOsType').value = entry.osType;
+                    document.getElementById('editAccess').value = entry.access;
+                    document.getElementById('editClear').value = entry.clear;
+                    document.getElementById('editPollInterval').value = entry.pollInterval;
+                    document.getElementById('editLocationId').value = entry.locationId;
+                    document.getElementById('editInfo').value = entry.info;
+                    document.getElementById('editTicketId').value = entry.ticketId;
+                    
+                    editModal.show();
+                }
+            } catch (error) {
+                console.error('Error loading entry for edit:', error);
+                alert('Failed to load entry for editing');
+            }
+        }
+
+        // Save edited entry
+        document.getElementById('saveEdit').addEventListener('click', async () => {
+            const lineNumber = document.getElementById('editLineNumber').value;
+            
+            const entryData = {
+                name: document.getElementById('editName').value.trim(),
+                ip: document.getElementById('editIp').value.trim(),
+                username: document.getElementById('editUsername').value.trim(),
+                password: document.getElementById('editPassword').value,
+                enablePassword: document.getElementById('editEnablePassword').value,
+                osType: document.getElementById('editOsType').value,
+                access: document.getElementById('editAccess').value,
+                clear: document.getElementById('editClear').value,
+                pollInterval: document.getElementById('editPollInterval').value,
+                locationId: document.getElementById('editLocationId').value.trim(),
+                info: document.getElementById('editInfo').value.trim(),
+                ticketId: document.getElementById('editTicketId').value.trim()
+            };
+
+            try {
+                const response = await fetch(`${API_URL}/${lineNumber}`, {
+                    method: 'PUT',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(entryData)
+                });
+
+                if (response.ok) {
+                    editModal.hide();
+                    loadEntries();
+                } else {
+                    const error = await response.json();
+                    throw new Error(error.error || 'Failed to update entry');
+                }
+            } catch (error) {
+                console.error('Error updating entry:', error);
+                alert(error.message);
+            }
+        });
+
+        // Delete entry
+        async function deleteEntry(lineNumber) {
+            if (!confirm('Are you sure you want to delete this entry?')) return;
+
+            try {
+                const response = await fetch(`${API_URL}/${lineNumber}`, {
+                    method: 'DELETE'
+                });
+
+                if (response.ok) {
+                    loadEntries();
+                } else {
+                    const error = await response.json();
+                    throw new Error(error.error || 'Failed to delete entry');
+                }
+            } catch (error) {
+                console.error('Error deleting entry:', error);
+                alert(error.message);
+            }
         }
     </script>
 </body>
