@@ -559,28 +559,21 @@
 
         // Delete entry
         async function deleteEntry(lineNumber) {
-            if (confirm('Sind Sie sicher, dass Sie diesen Eintrag löschen möchten?')) {
+            if (confirm('Are you sure you want to delete this entry?')) {
                 try {
-                    console.log('Deleting entry at line:', lineNumber);
                     const response = await fetch(`${API_URL}/${lineNumber}`, {
-                        method: 'DELETE',
-                        headers: {
-                            'Accept': 'application/json'
-                        }
+                        method: 'DELETE'
                     });
 
-                    const result = await response.json();
-                    console.log('Delete response:', result);
-
-                    if (response.ok && result.success) {
-                        await loadEntries();
-                        console.log('Entries reloaded after delete');
+                    if (response.ok) {
+                        loadEntries();
                     } else {
-                        throw new Error(result.error || 'Fehler beim Löschen des Eintrags');
+                        const error = await response.json();
+                        throw new Error(error.error || 'Failed to delete entry');
                     }
                 } catch (error) {
                     console.error('Error deleting entry:', error);
-                    alert('Fehler beim Löschen des Eintrags: ' + error.message);
+                    alert(error.message);
                 }
             }
         }

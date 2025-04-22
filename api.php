@@ -149,65 +149,32 @@ function addEntry() {
 }
 
 function deleteEntry($lineNumber) {
-    debugLog("Deleting entry at line", ['lineNumber' => $lineNumber]);
+    $lines = file(DB_FILE);
+    $dataLines = array_filter($lines, function($line) {
+        return !str_starts_with(trim($line), '#');
+    });
+    $dataLines = array_values($dataLines);
     
-    // Read all lines
-    $lines = file(DB_FILE, FILE_IGNORE_NEW_LINES);
-    if ($lines === false) {
-        debugLog("Failed to read database file");
-        return ['error' => 'Failed to read database file'];
-    }
-
-    // Separate header and data lines
-    $headerLines = [];
-    $dataLines = [];
-    $inHeader = true;
-
-    foreach ($lines as $line) {
-        if ($inHeader && (str_starts_with(trim($line), '#') || str_starts_with(trim($line), 'HDR:'))) {
-            $headerLines[] = $line;
-        } else {
-            $inHeader = false;
-            $dataLines[] = $line;
-        }
-    }
-
-    debugLog("File structure", [
-        'totalLines' => count($lines),
-        'headerLines' => count($headerLines),
-        'dataLines' => count($dataLines),
-        'targetLine' => $lineNumber
-    ]);
-
-    // Calculate actual index in dataLines (accounting for headers)
-    $dataIndex = $lineNumber - count($headerLines);
-    
-    // Check if the line exists in dataLines
-    if (!isset($dataLines[$dataIndex])) {
-        debugLog("Line not found", ['dataIndex' => $dataIndex]);
+    if (!isset($dataLines[$lineNumber])) {
         return ['error' => 'Entry not found'];
     }
-
-    // Remove the line
-    unset($dataLines[$dataIndex]);
-    $dataLines = array_values($dataLines); // Reindex array
-
-    // Combine everything back
-    $newContent = implode("\n", $headerLines) . "\n" . implode("\n", $dataLines);
-    if (!empty($dataLines)) {
-        $newContent .= "\n"; // Add final newline if we have data
-    }
-
-    debugLog("New content created", ['contentLength' => strlen($newContent)]);
-
-    // Write back to file
+    
+    // Get all header lines
+    $headerLines = array_filter($lines, function($line) {
+        return str_starts_with(trim($line), '#');
+    });
+    
+    // Remove the entry from data lines
+    unset($dataLines[$lineNumber]);
+    
+    // Combine headers and remaining data
+    $newContent = implode('', $headerLines) . implode('', $dataLines);
+    
     if (file_put_contents(DB_FILE, $newContent) === false) {
-        debugLog("Failed to write to database");
         return ['error' => 'Failed to delete entry'];
     }
-
+    
     createBackup();
-    debugLog("Entry deleted successfully");
     return ['success' => true];
 }
 
