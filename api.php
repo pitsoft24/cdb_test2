@@ -1,4 +1,7 @@
 <?php
+// Set timezone to Europe/Berlin
+date_default_timezone_set('Europe/Berlin');
+
 header("Access-Control-Allow-Origin: *");
 header("Content-Type: application/json; charset=UTF-8");
 header("Access-Control-Allow-Methods: OPTIONS,GET,POST,PUT,DELETE");
@@ -8,7 +11,7 @@ header("Access-Control-Allow-Headers: Content-Type, Access-Control-Allow-Headers
 // Add debug logging at the start of the file
 function debugLog($message, $data = null) {
     $logFile = __DIR__ . '/debug.log';
-    $timestamp = date('Y-m-d H:i:s');
+    $timestamp = date('Y-m-d H:i:s');  // This will now use Europe/Berlin timezone
     $logMessage = "[$timestamp] $message";
     if ($data !== null) {
         $logMessage .= "\nData: " . print_r($data, true);
@@ -252,7 +255,8 @@ function editEntry($lineNumber) {
 }
 
 function createBackup() {
-    $timestamp = date('Y_m_d_H_i');
+    // Ensure we're using the correct timezone
+    $timestamp = date('Y_m_d_H_i', time());  // Using time() to be explicit about using current time
     $backupFile = HISTORY_DIR . '/db_' . $timestamp;
     
     // Ensure history directory exists
@@ -271,7 +275,8 @@ function createBackup() {
     }
     
     debugLog("Backup created successfully", [
-        'file' => $backupFile
+        'file' => $backupFile,
+        'timestamp' => date('Y-m-d H:i:s', time())  // Log the exact time with timezone
     ]);
     return true;
 }
