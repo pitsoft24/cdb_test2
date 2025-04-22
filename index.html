@@ -109,34 +109,7 @@
                 <div class="me-3">
                     <input type="text" id="globalSearch" class="form-control" placeholder="Search in all fields...">
                 </div>
-                <button class="btn btn-primary me-2" onclick="toggleBackupModal()">Manage Backups</button>
                 <button class="btn btn-primary" onclick="toggleAddForm()">Add New Entry</button>
-            </div>
-        </div>
-        
-        <!-- Backup Modal -->
-        <div class="modal fade" id="backupModal" tabindex="-1">
-            <div class="modal-dialog modal-lg">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title">Backup Management</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                    </div>
-                    <div class="modal-body">
-                        <div class="table-container" style="max-height: 400px;">
-                            <table class="table">
-                                <thead>
-                                    <tr>
-                                        <th>Timestamp</th>
-                                        <th>Size</th>
-                                        <th>Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="backupsList"></tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
             </div>
         </div>
         
@@ -324,13 +297,11 @@
     <script>
         const API_URL = 'api.php';
         let editModal;
-        let backupModal;
         let globalSearch;
 
         // Initialize Bootstrap modals and form visibility
         document.addEventListener('DOMContentLoaded', () => {
             editModal = new bootstrap.Modal(document.getElementById('editModal'));
-            backupModal = new bootstrap.Modal(document.getElementById('backupModal'));
             globalSearch = document.getElementById('globalSearch');
             
             // Initialize search functionality
@@ -372,12 +343,6 @@
             }
         }
 
-        // Toggle Backup Modal
-        function toggleBackupModal() {
-            loadBackups();
-            backupModal.show();
-        }
-
         // Load all entries
         async function loadEntries() {
             try {
@@ -412,72 +377,6 @@
                 });
             } catch (error) {
                 console.error('Error loading entries:', error);
-            }
-        }
-
-        // Load backups
-        async function loadBackups() {
-            try {
-                const response = await fetch(`${API_URL}/backups`);
-                const backups = await response.json();
-                const backupsList = document.getElementById('backupsList');
-                backupsList.innerHTML = '';
-                
-                if (backups.length === 0) {
-                    backupsList.innerHTML = '<tr><td colspan="3" class="text-center">No backups available</td></tr>';
-                    return;
-                }
-                
-                backups.forEach(backup => {
-                    const row = document.createElement('tr');
-                    // Format timestamp to local date and time
-                    const date = new Date(backup.timestamp + ' UTC'); // Add UTC to ensure correct parsing
-                    const formattedDate = date.toLocaleString('de-DE', {
-                        year: 'numeric',
-                        month: '2-digit',
-                        day: '2-digit',
-                        hour: '2-digit',
-                        minute: '2-digit'
-                    });
-                    
-                    row.innerHTML = `
-                        <td>${formattedDate}</td>
-                        <td>${backup.size} KB</td>
-                        <td>
-                            <button class="btn btn-sm btn-primary" onclick="restoreBackup('${backup.filename}')">
-                                Restore
-                            </button>
-                        </td>
-                    `;
-                    backupsList.appendChild(row);
-                });
-            } catch (error) {
-                console.error('Error loading backups:', error);
-                const backupsList = document.getElementById('backupsList');
-                backupsList.innerHTML = '<tr><td colspan="3" class="text-center text-danger">Failed to load backups</td></tr>';
-            }
-        }
-
-        // Restore backup
-        async function restoreBackup(filename) {
-            if (confirm('Are you sure you want to restore this backup? Current data will be backed up before restore.')) {
-                try {
-                    const response = await fetch(`${API_URL}/backups/${filename}`, {
-                        method: 'POST'
-                    });
-                    
-                    if (response.ok) {
-                        backupModal.hide();
-                        loadEntries();
-                        alert('Backup restored successfully');
-                    } else {
-                        const error = await response.json();
-                        throw new Error(error.error || 'Failed to restore backup');
-                    }
-                } catch (error) {
-                    console.error('Error restoring backup:', error);
-                    alert(error.message);
-                }
             }
         }
 
