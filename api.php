@@ -10,14 +10,28 @@ header("Access-Control-Allow-Headers: Content-Type, Access-Control-Allow-Headers
 
 // Add debug logging at the start of the file
 function debugLog($message, $data = null) {
-    $logFile = __DIR__ . '/debug.log';
-    $timestamp = date('Y-m-d H:i:s');  // This will now use Europe/Berlin timezone
-    $logMessage = "[$timestamp] $message";
-    if ($data !== null) {
-        $logMessage .= "\nData: " . print_r($data, true);
+    try {
+        $logFile = __DIR__ . '/debug.log';
+        
+        // Ensure the log file exists and is writable
+        if (!file_exists($logFile)) {
+            touch($logFile);
+            chmod($logFile, 0666);
+        }
+        
+        $timestamp = date('Y-m-d H:i:s');
+        $logMessage = "[$timestamp] $message";
+        if ($data !== null) {
+            $logMessage .= "\nData: " . print_r($data, true);
+        }
+        $logMessage .= "\n-------------------\n";
+        
+        error_log($logMessage, 3, $logFile);
+        return true;
+    } catch (Exception $e) {
+        error_log("Failed to write to debug log: " . $e->getMessage());
+        return false;
     }
-    $logMessage .= "\n-------------------\n";
-    file_put_contents($logFile, $logMessage, FILE_APPEND);
 }
 
 // Handle CORS preflight requests
@@ -152,30 +166,44 @@ function addEntry() {
 }
 
 function deleteEntry($lineNumber) {
-    $lines = file(DB_FILE);
-    $dataLines = array_filter($lines, function($line) {
-        return !str_starts_with(trim($line), '#');
-    });
-    $dataLines = array_values($dataLines);
+    debugLog("Starting deletion process", ['lineNumber' => $lineNumber]);
     
-    if (!isset($dataLines[$lineNumber])) {
+    // Read all lines from the file
+    $lines = file(DB_FILE, FILE_IGNORE_NEW_LINES);
+    if ($lines === false) {
+        $error = error_get_last();
+        debugLog("Failed to read file", ['error' => $error]);
+        return ['error' => 'Failed to read database file'];
+    }
+    
+    debugLog("Current file contents", ['total_lines' => count($lines)]);
+    
+    // Find the actual line to delete
+    $targetLine = (int)$lineNumber;
+    if (!isset($lines[$targetLine])) {
+        debugLog("Line not found", ['targetLine' => $targetLine, 'total_lines' => count($lines)]);
         return ['error' => 'Entry not found'];
     }
     
-    // Get all header lines
-    $headerLines = array_filter($lines, function($line) {
-        return str_starts_with(trim($line), '#');
-    });
+    debugLog("Found line to delete", ['line_content' => $lines[$targetLine]]);
     
-    // Remove the entry from data lines
-    unset($dataLines[$lineNumber]);
+    // Remove the line
+    unset($lines[$targetLine]);
     
-    // Combine headers and remaining data
-    $newContent = implode('', $headerLines) . implode('', $dataLines);
+    // Write the file back
+    $newContent = implode("\n", $lines) . "\n";
+    $writeResult = file_put_contents(DB_FILE, $newContent);
     
-    if (file_put_contents(DB_FILE, $newContent) === false) {
+    if ($writeResult === false) {
+        $error = error_get_last();
+        debugLog("Failed to write file", ['error' => $error]);
         return ['error' => 'Failed to delete entry'];
     }
+    
+    debugLog("Successfully deleted entry", [
+        'lineNumber' => $lineNumber,
+        'remaining_lines' => count($lines)
+    ]);
     
     createBackup();
     return ['success' => true];
@@ -377,7 +405,13 @@ debugLog("Incoming request", [
     'method' => $method,
     'path' => $path,
     'request_uri' => $_SERVER['REQUEST_URI'],
-    'raw_input' => file_get_contents('php://input')
+    'raw_input' => file_get_contents('php://input'),
+    'server_vars' => [
+        'QUERY_STRING' => $_SERVER['QUERY_STRING'] ?? '',
+        'REQUEST_METHOD' => $_SERVER['REQUEST_METHOD'],
+        'CONTENT_TYPE' => $_SERVER['CONTENT_TYPE'] ?? '',
+        'CONTENT_LENGTH' => $_SERVER['CONTENT_LENGTH'] ?? ''
+    ]
 ]);
 
 // Parse path segments

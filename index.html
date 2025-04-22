@@ -188,6 +188,9 @@
         
         <!-- Entries Table -->
         <div class="table-container">
+            <div class="mb-3">
+                <button class="btn btn-danger" onclick="deleteSelectedEntries()" id="deleteSelectedBtn" style="display: none;">Delete Selected Entries</button>
+            </div>
             <table class="excel-table">
                 <thead>
                     <tr>
@@ -368,13 +371,19 @@
                         <td>${entry.info}</td>
                         <td>${entry.ticketId}</td>
                         <td class="action-buttons">
-                            <button class="btn btn-sm btn-primary" onclick="editEntry(${entry.lineNumber}, ${JSON.stringify(entry).replace(/"/g, '&quot;')})">Edit</button>
-                            <button class="btn btn-sm btn-success" onclick="copyEntry(${entry.lineNumber}, ${JSON.stringify(entry).replace(/"/g, '&quot;')})">Copy</button>
-                            <button class="btn btn-sm btn-danger" onclick="deleteEntry(${entry.lineNumber})">Delete</button>
+                            <div class="d-flex align-items-center">
+                                <input type="checkbox" class="form-check-input me-2" onchange="updateDeleteButtonVisibility()" data-line="${entry.lineNumber}">
+                                <button class="btn btn-sm btn-primary me-1" onclick="editEntry(${entry.lineNumber}, ${JSON.stringify(entry).replace(/"/g, '&quot;')})">Edit</button>
+                                <button class="btn btn-sm btn-success me-1" onclick="copyEntry(${entry.lineNumber}, ${JSON.stringify(entry).replace(/"/g, '&quot;')})">Copy</button>
+                                <button class="btn btn-sm btn-danger" onclick="deleteEntry(${entry.lineNumber})">Delete</button>
+                            </div>
                         </td>
                     `;
                     entriesList.appendChild(row);
                 });
+                
+                // Update delete button visibility after loading entries
+                updateDeleteButtonVisibility();
             } catch (error) {
                 console.error('Error loading entries:', error);
             }
@@ -557,6 +566,65 @@
                 input.type = 'password';
                 icon.classList.remove('bi-eye-slash');
                 icon.classList.add('bi-eye');
+            }
+        }
+
+        function updateDeleteButtonVisibility() {
+            const checkboxes = document.querySelectorAll('.form-check-input');
+            const deleteSelectedBtn = document.getElementById('deleteSelectedBtn');
+            const hasChecked = Array.from(checkboxes).some(checkbox => checkbox.checked);
+            deleteSelectedBtn.style.display = hasChecked ? 'inline-block' : 'none';
+        }
+
+        async function deleteSelectedEntries() {
+            const checkboxes = document.querySelectorAll('.form-check-input:checked');
+            const selectedLines = Array.from(checkboxes).map(checkbox => checkbox.getAttribute('data-line'));
+            
+            if (selectedLines.length === 0) {
+                alert('Please select entries to delete');
+                return;
+            }
+            
+            if (confirm(`Are you sure you want to delete ${selectedLines.length} selected entries?`)) {
+                let successCount = 0;
+                let errorCount = 0;
+                
+                for (const lineNumber of selectedLines) {
+                    try {
+                        console.log(`Attempting to delete line ${lineNumber}`);
+                        const response = await fetch(`${API_URL}/${lineNumber}`, {
+                            method: 'DELETE',
+                            headers: {
+                                'Accept': 'application/json'
+                            }
+                        });
+                        
+                        const result = await response.json();
+                        console.log(`Delete response for line ${lineNumber}:`, result);
+                        
+                        if (response.ok && result.success) {
+                            successCount++;
+                        } else {
+                            errorCount++;
+                            console.error(`Failed to delete entry ${lineNumber}:`, result.error || 'Unknown error');
+                        }
+                    } catch (error) {
+                        errorCount++;
+                        console.error(`Error deleting entry ${lineNumber}:`, error);
+                    }
+                }
+                
+                // Show result message
+                if (successCount > 0) {
+                    alert(`Successfully deleted ${successCount} entries.${errorCount > 0 ? ` Failed to delete ${errorCount} entries.` : ''}`);
+                } else {
+                    alert('Failed to delete selected entries. Please try again.');
+                }
+                
+                // Refresh the entries list
+                await loadEntries();
+                // Hide the delete button
+                document.getElementById('deleteSelectedBtn').style.display = 'none';
             }
         }
     </script>
