@@ -61,6 +61,7 @@ function getEntries() {
     
     $entries = [];
     $lines = file(DB_FILE, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+    $actualLineNumber = 0;  // Track actual line number in file
     
     foreach ($lines as $lineNumber => $line) {
         $line = trim($line);
@@ -73,6 +74,7 @@ function getEntries() {
         if (count($fields) >= 12) {
             $entries[] = [
                 'lineNumber' => $lineNumber,  // Store actual file line number
+                'displayNumber' => $actualLineNumber++,  // Store display number for frontend
                 'name' => $fields[0],
                 'ip' => $fields[1],
                 'username' => $fields[2],
@@ -166,43 +168,90 @@ function addEntry() {
 }
 
 function deleteEntry($lineNumber) {
-    debugLog("Starting deletion process", ['lineNumber' => $lineNumber]);
+    debugLog("DELETE REQUEST RECEIVED", [
+        'function' => 'deleteEntry',
+        'lineNumber' => $lineNumber,
+        'timestamp' => date('Y-m-d H:i:s'),
+        'request_method' => $_SERVER['REQUEST_METHOD']
+    ]);
+    
+    if (!file_exists(DB_FILE)) {
+        debugLog("Database file not found", ['path' => DB_FILE]);
+        http_response_code(404);
+        return ['error' => 'Database file not found'];
+    }
     
     // Read all lines from the file
     $lines = file(DB_FILE, FILE_IGNORE_NEW_LINES);
     if ($lines === false) {
         $error = error_get_last();
-        debugLog("Failed to read file", ['error' => $error]);
+        debugLog("Failed to read database file", [
+            'error' => $error,
+            'file' => DB_FILE,
+            'file_exists' => file_exists(DB_FILE),
+            'file_readable' => is_readable(DB_FILE)
+        ]);
+        http_response_code(500);
         return ['error' => 'Failed to read database file'];
     }
     
-    debugLog("Current file contents", ['total_lines' => count($lines)]);
+    debugLog("File contents read successfully", [
+        'total_lines' => count($lines),
+        'target_line' => $lineNumber,
+        'file_size' => filesize(DB_FILE)
+    ]);
     
     // Find the actual line to delete
     $targetLine = (int)$lineNumber;
     if (!isset($lines[$targetLine])) {
-        debugLog("Line not found", ['targetLine' => $targetLine, 'total_lines' => count($lines)]);
+        debugLog("Target line not found", [
+            'requested_line' => $targetLine,
+            'total_lines' => count($lines),
+            'available_lines' => array_keys($lines)
+        ]);
+        http_response_code(404);
         return ['error' => 'Entry not found'];
     }
     
-    debugLog("Found line to delete", ['line_content' => $lines[$targetLine]]);
+    // Verify this is not a header or comment line
+    $lineContent = $lines[$targetLine];
+    if (empty(trim($lineContent)) || str_starts_with(trim($lineContent), '#') || str_starts_with(trim($lineContent), 'HDR:')) {
+        debugLog("Attempted to delete header/comment line", [
+            'line_number' => $targetLine,
+            'content' => $lineContent
+        ]);
+        http_response_code(400);
+        return ['error' => 'Cannot delete header or comment lines'];
+    }
+    
+    debugLog("Found line to delete", [
+        'line_number' => $targetLine,
+        'content' => $lineContent
+    ]);
     
     // Remove the line
     unset($lines[$targetLine]);
     
     // Write the file back
-    $newContent = implode("\n", $lines) . "\n";
-    $writeResult = file_put_contents(DB_FILE, $newContent);
+    $newContent = implode("\n", array_values($lines)) . "\n";
+    $writeResult = file_put_contents(DB_FILE, $newContent, LOCK_EX);
     
     if ($writeResult === false) {
         $error = error_get_last();
-        debugLog("Failed to write file", ['error' => $error]);
+        debugLog("Failed to write updated content", [
+            'error' => $error,
+            'file' => DB_FILE,
+            'file_writable' => is_writable(DB_FILE),
+            'content_length' => strlen($newContent)
+        ]);
+        http_response_code(500);
         return ['error' => 'Failed to delete entry'];
     }
     
     debugLog("Successfully deleted entry", [
         'lineNumber' => $lineNumber,
-        'remaining_lines' => count($lines)
+        'remaining_lines' => count($lines),
+        'bytes_written' => $writeResult
     ]);
     
     createBackup();
@@ -396,10 +445,68 @@ function restoreBackup($filename) {
     return ['success' => true];
 }
 
+function getDebugLog() {
+    $logFile = __DIR__ . '/debug.log';
+    if (!file_exists($logFile)) {
+        return 'Debug log is empty';
+    }
+    return file_get_contents($logFile);
+}
+
+function clearDebugLog() {
+    $logFile = __DIR__ . '/debug.log';
+    if (file_exists($logFile)) {
+        file_put_contents($logFile, '');
+        return ['success' => true];
+    }
+    return ['error' => 'Debug log file not found'];
+}
+
+function logSelection() {
+    $input = json_decode(file_get_contents('php://input'), true);
+    if ($input === null) {
+        return ['error' => 'Invalid JSON data'];
+    }
+
+    // Handle both selection changes and debug messages
+    if (isset($input['message'])) {
+        // Debug message logging
+        debugLog($input['message'], $input['data'] ?? null);
+    } else if (isset($input['selectedLines'])) {
+        // Selection change logging
+        debugLog("Checkbox selection changed", [
+            'selected_lines' => $input['selectedLines'],
+            'total_checkboxes' => $input['totalCheckboxes'] ?? 0,
+            'selected_count' => count($input['selectedLines']),
+            'timestamp' => $input['timestamp'] ?? date('Y-m-d\TH:i:s.v\Z')
+        ]);
+    }
+
+    return ['success' => true];
+}
+
 // Handle requests
 $method = $_SERVER['REQUEST_METHOD'];
 $path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 $path = str_replace('/api.php', '', $path);
+
+// Get query parameters
+$action = $_GET['action'] ?? '';
+
+// Handle debug log actions first
+if ($action === 'getDebugLog') {
+    header('Content-Type: text/plain');
+    echo getDebugLog();
+    exit;
+} elseif ($action === 'clearDebugLog' && $method === 'POST') {
+    header('Content-Type: application/json');
+    echo json_encode(clearDebugLog());
+    exit;
+} elseif ($action === 'logSelection' && $method === 'POST') {
+    header('Content-Type: application/json');
+    echo json_encode(logSelection());
+    exit;
+}
 
 debugLog("Incoming request", [
     'method' => $method,
@@ -410,14 +517,24 @@ debugLog("Incoming request", [
         'QUERY_STRING' => $_SERVER['QUERY_STRING'] ?? '',
         'REQUEST_METHOD' => $_SERVER['REQUEST_METHOD'],
         'CONTENT_TYPE' => $_SERVER['CONTENT_TYPE'] ?? '',
-        'CONTENT_LENGTH' => $_SERVER['CONTENT_LENGTH'] ?? ''
+        'CONTENT_LENGTH' => $_SERVER['CONTENT_LENGTH'] ?? '',
+        'PATH_INFO' => $_SERVER['PATH_INFO'] ?? '',
+        'SCRIPT_NAME' => $_SERVER['SCRIPT_NAME'] ?? ''
     ]
 ]);
 
 // Parse path segments
 $pathSegments = array_values(array_filter(explode('/', $path)));
+debugLog("Path segments", ['segments' => $pathSegments]);
+
 $resource = $pathSegments[0] ?? '';
 $id = $pathSegments[1] ?? null;
+
+debugLog("Parsed request", [
+    'resource' => $resource,
+    'id' => $id,
+    'method' => $method
+]);
 
 switch ($method) {
     case 'GET':
@@ -435,12 +552,18 @@ switch ($method) {
         }
         break;
     case 'DELETE':
+        debugLog("Processing DELETE request", [
+            'id' => $id,
+            'path_segments' => $pathSegments
+        ]);
         if ($id === null) {
             http_response_code(400);
             echo json_encode(['error' => 'Line number is required for DELETE']);
             break;
         }
-        echo json_encode(deleteEntry($id));
+        $result = deleteEntry($id);
+        debugLog("Delete result", $result);
+        echo json_encode($result);
         break;
     case 'PUT':
         if ($id === null) {

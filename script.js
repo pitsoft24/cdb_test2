@@ -118,4 +118,107 @@ class TemplateEditor {
 // Initialisiere den Editor wenn das DOM geladen ist
 document.addEventListener('DOMContentLoaded', () => {
     new TemplateEditor();
-}); 
+});
+
+function displayEntries(entries) {
+    const tbody = document.querySelector('#entriesTable tbody');
+    tbody.innerHTML = '';
+    
+    entries.forEach((entry, index) => {
+        const row = document.createElement('tr');
+        row.setAttribute('data-line-number', entry.lineNumber);
+        row.setAttribute('data-display-number', index + 1);
+        
+        row.innerHTML = `
+            <td><input type="checkbox" class="entry-checkbox" onchange="updateSelectedCount()"></td>
+            <td>${index + 1}</td>
+            <td>${entry.name || ''}</td>
+            <td>${entry.ip || ''}</td>
+            <td>${entry.username || ''}</td>
+            <td>${entry.password || ''}</td>
+            <td>${entry.enablePassword || ''}</td>
+            <td>${entry.osType || ''}</td>
+            <td>${entry.access || ''}</td>
+            <td>${entry.clear || ''}</td>
+            <td>${entry.pollInterval || ''}</td>
+            <td>${entry.locationId || ''}</td>
+            <td>${entry.info || ''}</td>
+            <td>${entry.ticketId || ''}</td>
+        `;
+        tbody.appendChild(row);
+    });
+    updateSelectedCount();
+}
+
+function toggleAllCheckboxes(checkbox) {
+    const checkboxes = document.querySelectorAll('.entry-checkbox');
+    checkboxes.forEach(cb => cb.checked = checkbox.checked);
+    updateSelectedCount();
+}
+
+function updateSelectedCount() {
+    const selectedCount = document.querySelectorAll('.entry-checkbox:checked').length;
+    const infoSpan = document.getElementById('selectedRowsInfo');
+    const countSpan = document.getElementById('selectedCount');
+    
+    countSpan.textContent = selectedCount;
+    infoSpan.style.display = selectedCount > 0 ? 'inline' : 'none';
+}
+
+async function deleteSelectedEntries() {
+    const selectedRows = Array.from(document.querySelectorAll('.entry-checkbox:checked')).map(checkbox => checkbox.closest('tr'));
+    
+    if (selectedRows.length === 0) {
+        alert('Please select at least one entry to delete.');
+        return;
+    }
+
+    const confirmation = confirm(`Are you sure you want to delete ${selectedRows.length} selected entries?`);
+    if (!confirmation) return;
+
+    console.log('Starting deletion process...');
+    let successCount = 0;
+    let failureCount = 0;
+
+    try {
+        const deletePromises = selectedRows.map(async (row) => {
+            const lineNumber = row.getAttribute('data-line-number');
+            const displayNumber = row.getAttribute('data-display-number');
+            
+            console.log(`Attempting to delete line ${lineNumber} (display #${displayNumber})`);
+            
+            try {
+                const response = await fetch(`api.php?action=delete&line=${lineNumber}`);
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                const result = await response.json();
+                
+                if (result.success) {
+                    console.log(`Successfully deleted line ${lineNumber}`);
+                    successCount++;
+                    return true;
+                } else {
+                    console.error(`Failed to delete line ${lineNumber}: ${result.message}`);
+                    failureCount++;
+                    return false;
+                }
+            } catch (error) {
+                console.error(`Error deleting line ${lineNumber}:`, error);
+                failureCount++;
+                return false;
+            }
+        });
+
+        await Promise.all(deletePromises);
+        
+        // Refresh the entries table
+        await fetchAndDisplayEntries();
+        
+        // Show results to user
+        const message = `Deletion complete:\n${successCount} entries deleted successfully${failureCount > 0 ? `\n${failureCount} entries failed to delete` : ''}`;
+        alert(message);
+        
+    } catch (error) {
+        console.error('Error during deletion process:', error);
+        alert('An error occurred during the deletion process. Please check the console for details.');
+    }
+} 

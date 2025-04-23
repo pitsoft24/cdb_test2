@@ -99,120 +99,186 @@
             align-items: center;
             margin-bottom: 20px;
         }
+        #debugLogContainer {
+            position: fixed;
+            right: 0;
+            top: 0;
+            bottom: 0;
+            width: 0;
+            background-color: #343a40;
+            transition: width 0.3s ease;
+            overflow: hidden;
+            z-index: 1000;
+        }
+        #debugLogContainer.show {
+            width: 40%;
+            border-left: 1px solid #495057;
+        }
+        #debugLogContent {
+            padding: 15px;
+            height: calc(100% - 50px);
+            overflow-y: auto;
+            white-space: pre-wrap;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        #debugLogHeader {
+            padding: 10px 15px;
+            background-color: #2c3034;
+            border-bottom: 1px solid #495057;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        #toggleDebugLogBtn {
+            position: fixed;
+            right: 20px;
+            bottom: 20px;
+            z-index: 1001;
+        }
+        .main-content {
+            transition: margin-right 0.3s ease;
+        }
+        .main-content.shifted {
+            margin-right: 40%;
+        }
     </style>
 </head>
 <body>
-    <div class="container py-4">
-        <div class="header-container">
-            <h1 class="mb-0">CDB Entry Manager</h1>
-            <div class="d-flex align-items-center">
-                <div class="me-3">
-                    <input type="text" id="globalSearch" class="form-control" placeholder="Search in all fields...">
+    <div class="main-content" id="mainContent">
+        <div class="container py-4">
+            <div class="header-container">
+                <h1 class="mb-0">CDB Entry Manager</h1>
+                <div class="d-flex align-items-center">
+                    <div class="me-3">
+                        <input type="text" id="globalSearch" class="form-control" placeholder="Search in all fields...">
+                    </div>
+                    <button class="btn btn-primary" onclick="toggleAddForm()">Add New Entry</button>
                 </div>
-                <button class="btn btn-primary" onclick="toggleAddForm()">Add New Entry</button>
             </div>
-        </div>
-        
-        <!-- Add Entry Form -->
-        <div class="form-container" id="addEntryFormContainer">
-            <div class="d-flex justify-content-between align-items-center mb-3">
-                <h2 class="h4 mb-0">Add New Entry</h2>
-                <button type="button" class="btn-close" onclick="toggleAddForm()"></button>
-            </div>
-            <form id="addEntryForm">
-                <div class="row g-3">
-                    <div class="col-md-6">
-                        <label for="name" class="form-label">Name</label>
-                        <input type="text" class="form-control" id="name" required>
-                    </div>
-                    <div class="col-md-6">
-                        <label for="ip" class="form-label">IP Address</label>
-                        <input type="text" class="form-control" id="ip" required>
-                    </div>
-                    <div class="col-md-6">
-                        <label for="username" class="form-label">Username</label>
-                        <input type="text" class="form-control" id="username" required>
-                    </div>
-                    <div class="col-md-6">
-                        <label for="password" class="form-label">Password</label>
-                        <div class="input-group">
-                            <input type="password" class="form-control" id="password" required>
-                            <button class="btn btn-outline-secondary" type="button" onclick="togglePassword('password')">
-                                <i class="bi bi-eye"></i>
-                            </button>
+            
+            <!-- Add Entry Form -->
+            <div class="form-container" id="addEntryFormContainer">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h2 class="h4 mb-0">Add New Entry</h2>
+                    <button type="button" class="btn-close" onclick="toggleAddForm()"></button>
+                </div>
+                <form id="addEntryForm">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="name" class="form-label">Name</label>
+                            <input type="text" class="form-control" id="name" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="ip" class="form-label">IP Address</label>
+                            <input type="text" class="form-control" id="ip" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="username" class="form-label">Username</label>
+                            <input type="text" class="form-control" id="username" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="password" class="form-label">Password</label>
+                            <div class="input-group">
+                                <input type="password" class="form-control" id="password" required>
+                                <button class="btn btn-outline-secondary" type="button" onclick="togglePassword('password')">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="enablePassword" class="form-label">Enable Password</label>
+                            <div class="input-group">
+                                <input type="password" class="form-control" id="enablePassword" required>
+                                <button class="btn btn-outline-secondary" type="button" onclick="togglePassword('enablePassword')">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="osType" class="form-label">OS Type</label>
+                            <input type="text" class="form-control" id="osType" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="access" class="form-label">Access Type</label>
+                            <input type="text" class="form-control" id="access" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="clear" class="form-label">Clear Status</label>
+                            <input type="text" class="form-control" id="clear" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="pollInterval" class="form-label">Poll Interval</label>
+                            <input type="text" class="form-control" id="pollInterval" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="locationId" class="form-label">Location ID</label>
+                            <input type="text" class="form-control" id="locationId" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="info" class="form-label">Information</label>
+                            <textarea class="form-control" id="info" rows="3"></textarea>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="ticketId" class="form-label">Ticket ID</label>
+                            <input type="text" class="form-control" id="ticketId">
                         </div>
                     </div>
-                    <div class="col-md-6">
-                        <label for="enablePassword" class="form-label">Enable Password</label>
-                        <div class="input-group">
-                            <input type="password" class="form-control" id="enablePassword" required>
-                            <button class="btn btn-outline-secondary" type="button" onclick="togglePassword('enablePassword')">
-                                <i class="bi bi-eye"></i>
-                            </button>
-                        </div>
+                    <div class="mt-3">
+                        <button type="submit" class="btn btn-primary">Add Entry</button>
                     </div>
-                    <div class="col-md-6">
-                        <label for="osType" class="form-label">OS Type</label>
-                        <input type="text" class="form-control" id="osType" required>
-                    </div>
-                    <div class="col-md-6">
-                        <label for="access" class="form-label">Access Type</label>
-                        <input type="text" class="form-control" id="access" required>
-                    </div>
-                    <div class="col-md-6">
-                        <label for="clear" class="form-label">Clear Status</label>
-                        <input type="text" class="form-control" id="clear" required>
-                    </div>
-                    <div class="col-md-6">
-                        <label for="pollInterval" class="form-label">Poll Interval</label>
-                        <input type="text" class="form-control" id="pollInterval" required>
-                    </div>
-                    <div class="col-md-6">
-                        <label for="locationId" class="form-label">Location ID</label>
-                        <input type="text" class="form-control" id="locationId" required>
-                    </div>
-                    <div class="col-md-6">
-                        <label for="info" class="form-label">Information</label>
-                        <textarea class="form-control" id="info" rows="3"></textarea>
-                    </div>
-                    <div class="col-md-6">
-                        <label for="ticketId" class="form-label">Ticket ID</label>
-                        <input type="text" class="form-control" id="ticketId">
-                    </div>
-                </div>
-                <div class="mt-3">
-                    <button type="submit" class="btn btn-primary">Add Entry</button>
-                </div>
-            </form>
-        </div>
-        
-        <!-- Entries Table -->
-        <div class="table-container">
-            <div class="mb-3">
-                <button class="btn btn-danger" onclick="deleteSelectedEntries()" id="deleteSelectedBtn" style="display: none;">Delete Selected Entries</button>
+                </form>
             </div>
-            <table class="excel-table">
-                <thead>
-                    <tr>
-                        <th>Line</th>
-                        <th>Name</th>
-                        <th>IP Address</th>
-                        <th>Username</th>
-                        <th>Password</th>
-                        <th>Enable Password</th>
-                        <th>OS Type</th>
-                        <th>Access</th>
-                        <th>Status</th>
-                        <th>Poll Interval</th>
-                        <th>Location ID</th>
-                        <th>Information</th>
-                        <th>Ticket ID</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody id="entriesList"></tbody>
-            </table>
+            
+            <!-- Entries Table -->
+            <div class="table-container">
+                <div class="mb-3 d-flex align-items-center">
+                    <button class="btn btn-danger me-2" onclick="deleteSelectedEntries()" id="deleteSelectedBtn" style="display: none;">Delete Selected Entries</button>
+                    <span id="selectedRowsInfo" class="text-muted" style="display: none;">Selected rows: </span>
+                </div>
+                <table class="excel-table">
+                    <thead>
+                        <tr>
+                            <th><input type="checkbox" id="selectAll" onclick="toggleAllCheckboxes(this)"></th>
+                            <th>#</th>
+                            <th>Name</th>
+                            <th>IP Address</th>
+                            <th>Username</th>
+                            <th>Password</th>
+                            <th>Enable Password</th>
+                            <th>OS Type</th>
+                            <th>Access</th>
+                            <th>Status</th>
+                            <th>Poll Interval</th>
+                            <th>Location ID</th>
+                            <th>Information</th>
+                            <th>Ticket ID</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="entriesList"></tbody>
+                </table>
+            </div>
         </div>
+    </div>
+
+    <button id="toggleDebugLogBtn" class="btn btn-info">
+        <i class="bi bi-bug"></i> Show Debug Log
+    </button>
+
+    <div id="debugLogContainer">
+        <div id="debugLogHeader">
+            <h5 class="mb-0">Debug Log</h5>
+            <div>
+                <button class="btn btn-sm btn-secondary me-2" onclick="refreshDebugLog()">
+                    <i class="bi bi-arrow-clockwise"></i> Refresh
+                </button>
+                <button class="btn btn-sm btn-secondary" onclick="clearDebugLog()">
+                    <i class="bi bi-trash"></i> Clear
+                </button>
+            </div>
+        </div>
+        <div id="debugLogContent"></div>
     </div>
 
     <!-- Edit Modal -->
@@ -311,6 +377,16 @@
             if (globalSearch) {
                 globalSearch.addEventListener('input', (e) => performGlobalSearch(e.target.value));
             }
+
+            // Add click event listener for delete button
+            const deleteBtn = document.getElementById('deleteSelectedBtn');
+            if (deleteBtn) {
+                deleteBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    debugLog("Delete button clicked");
+                    deleteSelectedEntries();
+                });
+            }
             
             loadEntries();
         });
@@ -357,6 +433,7 @@
                 entries.forEach(entry => {
                     const row = document.createElement('tr');
                     row.innerHTML = `
+                        <td><input type="checkbox" class="form-check-input me-2" onchange="updateDeleteButtonVisibility()" data-line="${entry.lineNumber}"></td>
                         <td>${entry.lineNumber}</td>
                         <td>${entry.name}</td>
                         <td>${entry.ip}</td>
@@ -372,7 +449,6 @@
                         <td>${entry.ticketId}</td>
                         <td class="action-buttons">
                             <div class="d-flex align-items-center">
-                                <input type="checkbox" class="form-check-input me-2" onchange="updateDeleteButtonVisibility()" data-line="${entry.lineNumber}">
                                 <button class="btn btn-sm btn-primary me-1" onclick="editEntry(${entry.lineNumber}, ${JSON.stringify(entry).replace(/"/g, '&quot;')})">Edit</button>
                                 <button class="btn btn-sm btn-success me-1" onclick="copyEntry(${entry.lineNumber}, ${JSON.stringify(entry).replace(/"/g, '&quot;')})">Copy</button>
                                 <button class="btn btn-sm btn-danger" onclick="deleteEntry(${entry.lineNumber})">Delete</button>
@@ -572,59 +648,162 @@
         function updateDeleteButtonVisibility() {
             const checkboxes = document.querySelectorAll('.form-check-input');
             const deleteSelectedBtn = document.getElementById('deleteSelectedBtn');
-            const hasChecked = Array.from(checkboxes).some(checkbox => checkbox.checked);
+            const selectedRowsInfo = document.getElementById('selectedRowsInfo');
+            const selectedLines = Array.from(checkboxes)
+                .filter(checkbox => checkbox.checked)
+                .map(checkbox => checkbox.getAttribute('data-line'));
+            
+            const hasChecked = selectedLines.length > 0;
             deleteSelectedBtn.style.display = hasChecked ? 'inline-block' : 'none';
+            selectedRowsInfo.style.display = hasChecked ? 'inline-block' : 'none';
+            if (hasChecked) {
+                selectedRowsInfo.textContent = `Selected rows: ${selectedLines.join(', ')}`;
+            }
+
+            // Log selection changes to debug log
+            fetch(`${API_URL}?action=logSelection`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    selectedLines: selectedLines,
+                    totalCheckboxes: checkboxes.length,
+                    timestamp: new Date().toISOString()
+                })
+            }).catch(error => console.error('Error logging selection:', error));
         }
 
         async function deleteSelectedEntries() {
+            debugLog("deleteSelectedEntries function called");
             const checkboxes = document.querySelectorAll('.form-check-input:checked');
+            debugLog(`Found ${checkboxes.length} checked checkboxes`);
             const selectedLines = Array.from(checkboxes).map(checkbox => checkbox.getAttribute('data-line'));
+            debugLog(`Selected lines for deletion: ${selectedLines.join(', ')}`);
             
             if (selectedLines.length === 0) {
                 alert('Please select entries to delete');
                 return;
             }
             
-            if (confirm(`Are you sure you want to delete ${selectedLines.length} selected entries?`)) {
+            const confirmMessage = `Are you sure you want to delete ${selectedLines.length} selected entries?`;
+            debugLog('Showing confirmation dialog');
+            
+            if (confirm(confirmMessage)) {
+                debugLog('User confirmed deletion');
                 let successCount = 0;
                 let errorCount = 0;
                 
                 for (const lineNumber of selectedLines) {
                     try {
-                        console.log(`Attempting to delete line ${lineNumber}`);
+                        debugLog(`Attempting to delete line ${lineNumber}`);
                         const response = await fetch(`${API_URL}/${lineNumber}`, {
                             method: 'DELETE',
                             headers: {
-                                'Accept': 'application/json'
+                                'Accept': 'application/json',
+                                'Content-Type': 'application/json'
                             }
                         });
                         
+                        debugLog(`Response status for line ${lineNumber}: ${response.status}`);
                         const result = await response.json();
-                        console.log(`Delete response for line ${lineNumber}:`, result);
+                        debugLog(`Delete response for line ${lineNumber}:`, result);
                         
                         if (response.ok && result.success) {
                             successCount++;
+                            debugLog(`Successfully deleted line ${lineNumber}`);
                         } else {
                             errorCount++;
-                            console.error(`Failed to delete entry ${lineNumber}:`, result.error || 'Unknown error');
+                            debugLog(`Failed to delete entry ${lineNumber}: ${result.error || 'Unknown error'}`);
                         }
                     } catch (error) {
                         errorCount++;
-                        console.error(`Error deleting entry ${lineNumber}:`, error);
+                        debugLog(`Error deleting entry ${lineNumber}: ${error.message}`);
                     }
                 }
                 
                 // Show result message
-                if (successCount > 0) {
-                    alert(`Successfully deleted ${successCount} entries.${errorCount > 0 ? ` Failed to delete ${errorCount} entries.` : ''}`);
-                } else {
-                    alert('Failed to delete selected entries. Please try again.');
-                }
+                const resultMessage = successCount > 0 
+                    ? `Successfully deleted ${successCount} entries.${errorCount > 0 ? ` Failed to delete ${errorCount} entries.` : ''}`
+                    : 'Failed to delete selected entries. Please try again.';
+                debugLog(resultMessage);
+                alert(resultMessage);
                 
                 // Refresh the entries list
                 await loadEntries();
-                // Hide the delete button
+                // Hide the delete button and selected rows info
                 document.getElementById('deleteSelectedBtn').style.display = 'none';
+                document.getElementById('selectedRowsInfo').style.display = 'none';
+            } else {
+                debugLog('User cancelled deletion');
+            }
+        }
+
+        // Helper function for debug logging
+        function debugLog(message, data = null) {
+            console.log(message);
+            // Also send to server-side debug log
+            fetch(`${API_URL}?action=logSelection`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    message: message,
+                    data: data,
+                    timestamp: new Date().toISOString()
+                })
+            }).catch(error => console.error('Error logging to server:', error));
+        }
+
+        // Debug log functionality
+        const debugLogContainer = document.getElementById('debugLogContainer');
+        const debugLogContent = document.getElementById('debugLogContent');
+        const toggleDebugLogBtn = document.getElementById('toggleDebugLogBtn');
+        const mainContent = document.getElementById('mainContent');
+
+        toggleDebugLogBtn.addEventListener('click', function() {
+            const isShowing = debugLogContainer.classList.contains('show');
+            if (isShowing) {
+                debugLogContainer.classList.remove('show');
+                mainContent.classList.remove('shifted');
+                this.innerHTML = '<i class="bi bi-bug"></i> Show Debug Log';
+            } else {
+                debugLogContainer.classList.add('show');
+                mainContent.classList.add('shifted');
+                this.innerHTML = '<i class="bi bi-bug"></i> Hide Debug Log';
+                refreshDebugLog();
+            }
+        });
+
+        async function refreshDebugLog() {
+            try {
+                const response = await fetch(`${API_URL}?action=getDebugLog`);
+                const data = await response.text();
+                debugLogContent.textContent = data;
+                debugLogContent.scrollTop = debugLogContent.scrollHeight;
+            } catch (error) {
+                console.error('Error fetching debug log:', error);
+                debugLogContent.textContent = 'Error loading debug log: ' + error.message;
+            }
+        }
+
+        async function clearDebugLog() {
+            if (!confirm('Are you sure you want to clear the debug log?')) {
+                return;
+            }
+            try {
+                const response = await fetch(`${API_URL}?action=clearDebugLog`, {
+                    method: 'POST'
+                });
+                if (response.ok) {
+                    debugLogContent.textContent = '';
+                } else {
+                    alert('Failed to clear debug log');
+                }
+            } catch (error) {
+                console.error('Error clearing debug log:', error);
+                alert('Error clearing debug log: ' + error.message);
             }
         }
     </script>
